@@ -4,7 +4,9 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QFileDialog>
+#include <QPixmap>
 #include <QDebug>
+#include <string>
 
 #include "img_viewer.h"
 #include "tiny_obj_loader.h"
@@ -37,8 +39,8 @@ ImageViewer::ImageViewer(QWidget *parent) :
     createMenus();
 
     img.load(QCoreApplication::arguments()[1]);
-
-    imgLabel->setPixmap(img);
+    pixmap = QPixmap::fromImage(img);
+    imgLabel->setPixmap(pixmap);
     
     connect(rCheck, SIGNAL(stateChanged(int)),
                     this, SLOT(redStateChanged(int)));
@@ -98,25 +100,41 @@ void ImageViewer::updateLabel() {
 
 void ImageViewer::open_obj() {
     obj_file = QFileDialog::getOpenFileName(this,
-            tr("Open .obj..."), "/mnt/c/Users/achan", tr("Object files (*.obj)"));
+            tr("Open .obj..."), "./", tr("Object files (*.obj)"));
     qDebug() << obj_file;
+    if (obj_file == "") { return; }
 }
 
 void ImageViewer::open_cam() {
     QString filename = QFileDialog::getOpenFileName(this,
-            tr("Open camera file"), "/mnt/c/Users/achan", tr("Text files (*.txt)"));
+            tr("Open camera file"), "./", tr("Text files (*.txt)"));
     qDebug() << filename;
+    camera = load_camera(filename.toStdString().c_str());
+}
+
+void ImageViewer::open_img() {
+    QString filename = QFileDialog::getOpenFileName(this,
+            tr("Open image"), "./", tr("Image files (*.ppm *.png *.jpg *.bmp)"));
+    if (filename == "") { return; }
+    img.load(filename);
+    pixmap = QPixmap::fromImage(img);
+    imgLabel->setPixmap(pixmap);
 }
 
 void ImageViewer::save() {
     QString filename = QFileDialog::getSaveFileName(this,
-            tr("Save image"), "/mnt/c/Users/achan",
+            tr("Save image"), "./",
             tr("Image files (*.ppm *.png *.jpg *.bmp)"));
     qDebug() << filename;
+    if (filename == "") { return; }
+    img.save(filename);
+
 }
 
-void ImageViewer::render() {
-
+void ImageViewer::rasterize_wrapper() {
+    img = rasterize(obj_file.toStdString().c_str(), camera, 512, 512, WHITE);
+    pixmap = QPixmap::fromImage(img);
+    imgLabel->setPixmap(pixmap);
 }
 
 void ImageViewer::createActions() {
@@ -129,15 +147,19 @@ void ImageViewer::createActions() {
     openCamAct->setStatusTip(tr("Open a camera file"));
     connect(openCamAct, &QAction::triggered, this, &ImageViewer::open_cam);
 
+    openImgAct = new QAction(tr("&Open image"), this);
+    openImgAct->setStatusTip(tr("Open an image"));
+    connect(openImgAct, &QAction::triggered, this, &ImageViewer::open_img);
+
     saveImgAct = new QAction(tr("&Save image"), this);
     saveImgAct->setShortcuts(QKeySequence::Save);
     saveImgAct->setStatusTip(tr("Save image to disk"));
     connect(saveImgAct, &QAction::triggered, this, &ImageViewer::save);
 
-    renderAct = new QAction(tr("&Render"), this);
-    renderAct->setShortcut(tr("Ctrl+R"));
-    renderAct->setStatusTip(tr("Render .obj"));
-    connect(renderAct, &QAction::triggered, this, &ImageViewer::render);
+    rasterizeAct = new QAction(tr("&Rasterize"), this);
+    rasterizeAct->setShortcut(tr("Ctrl+R"));
+    rasterizeAct->setStatusTip(tr("Rasterize .obj"));
+    connect(rasterizeAct, &QAction::triggered, this, &ImageViewer::rasterize_wrapper);
 
 }
 
@@ -145,8 +167,10 @@ void ImageViewer::createMenus() {
     fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(openObjAct);
     fileMenu->addAction(openCamAct);
+    fileMenu->addAction(openImgAct);
+    fileMenu->addSeparator();
     fileMenu->addAction(saveImgAct);
-    fileMenu->addAction(renderAct);
+    fileMenu->addAction(rasterizeAct);
 }
 
 int main(int argc, char **argv) {

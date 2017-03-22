@@ -8,6 +8,8 @@
 #include <QAction>
 #include <QMenu>
 
+#include "rasterize.h"
+
 // ":" is just like "extends" in Java
 class ImageViewer : public QMainWindow {
   Q_OBJECT // no ; required.  Put this inside any Qt GUI class
@@ -61,23 +63,27 @@ private:
   int channels;
   QCheckBox *rCheck, *gCheck, *bCheck;
   QLabel *imgLabel;
-  QPixmap img;
+  QPixmap pixmap;
+  QImage img;
 
   QString obj_file;
+  camera_mat_t camera;
 
   void createActions();
   void createMenus();
   QMenu *fileMenu;
   QAction *openObjAct;
   QAction *openCamAct;
+  QAction *openImgAct;
   QAction *saveImgAct;
-  QAction *renderAct;
+  QAction *rasterizeAct;
 
 private slots:
   void open_obj();
   void open_cam();
+  void open_img();
   void save();
-  void render();
+  void rasterize_wrapper();
 };
 
 #endif /* IMG_VIEWER_H */
