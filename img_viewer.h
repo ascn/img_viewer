@@ -7,6 +7,10 @@
 #include <QPixmap>
 #include <QAction>
 #include <QMenu>
+#include <QComboBox>
+#include <QDockWidget>
+#include <QDoubleSpinBox>
+#include <QGroupBox>
 
 #include "rasterize.h"
 
@@ -53,21 +57,51 @@ public slots:
    * of making the calls.
    */
 
-  void redStateChanged(int state);
-  void greenStateChanged(int state);
-  void blueStateChanged(int state);
+  void shadingOptionChanged(int index);
 
 private:
-  void updateLabel(void);
+  QGroupBox *cameraDockContents;
+  QDoubleSpinBox *cam_left_box;
+  QDoubleSpinBox *cam_right_box;
+  QDoubleSpinBox *cam_bottom_box;
+  QDoubleSpinBox *cam_top_box;
+  QDoubleSpinBox *cam_near_box;
+  QDoubleSpinBox *cam_far_box;
+  QDoubleSpinBox *cam_eye_x_box;
+  QDoubleSpinBox *cam_eye_y_box;
+  QDoubleSpinBox *cam_eye_z_box;
+  QDoubleSpinBox *cam_cen_x_box;
+  QDoubleSpinBox *cam_cen_y_box;
+  QDoubleSpinBox *cam_cen_z_box;
+  QDoubleSpinBox *cam_up_x_box;
+  QDoubleSpinBox *cam_up_y_box;
+  QDoubleSpinBox *cam_up_z_box;
+  QLabel *cam_left_label;
+  QLabel *cam_right_label;
+  QLabel *cam_bottom_label;
+  QLabel *cam_up_label;
+  QLabel *cam_near_label;
+  QLabel *cam_far_label;
+  QLabel *cam_eye_x_label;
+  QLabel *cam_eye_y_label;
+  QLabel *cam_eye_z_label;
+  QLabel *cam_cen_x_label;
+  QLabel *cam_cen_y_label;
+  QLabel *cam_cen_z_label;
+  QLabel *cam_up_x_label;
+  QLabel *cam_up_y_label;
+  QLabel *cam_up_z_label;
 
-  int channels;
-  QCheckBox *rCheck, *gCheck, *bCheck;
   QLabel *imgLabel;
   QPixmap pixmap;
   QImage img;
+  QComboBox *shadingOptionBox;
+
+  QDockWidget *cameraDock;
 
   QString obj_file;
   camera_mat_t camera;
+  e_shader shadingOption;
 
   void createActions();
   void createMenus();

@@ -288,10 +288,10 @@ QImage rasterize(const char *obj, camera_mat_t& camera, int w, int h, e_shader s
                             break;
                         case NORM_FLAT: {
                             vec4 view_n_1 = camera.view * f.normals[0];
-                            QRgb color = qRgb((unsigned char) ((view_n_1[0] + 1) * 127.5),
-                                              (unsigned char) ((view_n_1[0] + 1) * 127.5),
-                                              (unsigned char) ((view_n_1[0] + 1) * 127.5));
-                            out.setPixel(x, y - 0.5, color);
+                            out.setPixel(x, y - 0.5, 
+                                qRgb((unsigned char) ((view_n_1[0] + 1) * 127.5),
+                                     (unsigned char) ((view_n_1[1] + 1) * 127.5),
+                                     (unsigned char) ((view_n_1[2] + 1) * 127.5)));
                             break;
                         }
                         case NORM_GOURAUD: {

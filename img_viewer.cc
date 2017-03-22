@@ -5,7 +5,11 @@
 #include <QMenuBar>
 #include <QFileDialog>
 #include <QPixmap>
+#include <QComboBox>
+#include <QDockWidget>
 #include <QDebug>
+#include <QGroupBox>
+#include <QDoubleSpinBox>
 #include <string>
 
 #include "img_viewer.h"
@@ -13,9 +17,6 @@
 
 ImageViewer::ImageViewer(QWidget *parent) :
     QMainWindow(parent), channels(0) {
-    rCheck = new QCheckBox("&Red", this);
-    gCheck = new QCheckBox("&Green", this);
-    bCheck = new QCheckBox("&Blue", this);
     imgLabel = new QLabel(this);
 
     QVBoxLayout *layout = new QVBoxLayout();
@@ -23,17 +24,44 @@ ImageViewer::ImageViewer(QWidget *parent) :
     setCentralWidget(new QWidget());
     centralWidget()->setLayout(layout);
 
-    layout->addWidget(rCheck);
-    layout->addWidget(gCheck);
-    layout->addWidget(bCheck);
-
     layout->addWidget(imgLabel);
 
-    rCheck->show();
-    gCheck->show();
-    bCheck->show();
-
     imgLabel->show();
+
+    cameraDockContents = new QGroupBox(tr("Camera options"));
+
+    cam_left_box = new QDoubleSpinBox(cameraDockContents);
+    cam_left_box->setRange(-1, 1);
+    cam_left_box->setSingleStep(0.01);
+    cam_left_box->setDecimals(6);
+    cam_right_box = new QDoubleSpinBox(cameraDockContents);
+    cam_right_box->setRange(-1, 1);
+    cam_right_box->setSingleStep(0.01);
+    cam_right_box->setDecimals(6);
+    cam_bottom_box = new QDoubleSpinBox(cameraDockContents);
+    cam_bottom_box->setRange(-1, 1);
+    cam_bottom_box->setSingleStep(0.01);
+    cam_bottom_box->setDecimals(6);
+    cam_top_box = new QDoubleSpinBox(cameraDockContents);
+    cam_top_box->setRange(-1, 1);
+    cam_top_box->setSingleStep(0.01);
+    cam_top_box->setDecimals(6);
+
+    cam_near_box = new QDoubleSpinBox(cameraDockContents);
+    cam_near_box->setRange(0.1, 100);
+    cam_far_box = new QDoubleSpinBox(cameraDockContents);
+    cam_far_box->setRange(10, 1000);
+
+    cam_eye_x_box = new QDoubleSpinBox(cameraDockContents);
+    cam_eye_x_box->setRange(-100, 100);
+    cam_eye_x_box->setSingleStep(1);
+
+
+    cameraDock->addWidget(cameraDockContents);
+
+    cameraDock = new QDockWidget(tr("Camera options"), this);
+    cameraDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    addDockWidget(Qt::RightDockWidgetArea, cameraDock);
 
     createActions();
     createMenus();
@@ -41,61 +69,53 @@ ImageViewer::ImageViewer(QWidget *parent) :
     img.load(QCoreApplication::arguments()[1]);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
-    
-    connect(rCheck, SIGNAL(stateChanged(int)),
-                    this, SLOT(redStateChanged(int)));
-    connect(gCheck, SIGNAL(stateChanged(int)),
-                    this, SLOT(greenStateChanged(int)));
-    connect(bCheck, SIGNAL(stateChanged(int)),
-                    this, SLOT(blueStateChanged(int)));
+
+    shadingOptionBox = new QComboBox(this);
+    shadingOptionBox->addItem(tr("White"));
+    shadingOptionBox->addItem(tr("Random"));
+    shadingOptionBox->addItem(tr("Flat"));
+    shadingOptionBox->addItem(tr("Gouraud"));
+    shadingOptionBox->addItem(tr("Gouraud, perspective correct"));
+    shadingOptionBox->addItem(tr("Barycentric"));
+    shadingOptionBox->addItem(tr("Barycentric, perspective correct"));
+
+    layout->addWidget(shadingOptionBox);
+
+    shadingOptionBox->show();
+    shadingOption = WHITE;
+    connect(shadingOptionBox, SIGNAL(activated(int)),
+                              this, SLOT(shadingOptionChanged(int)));
 }
 
 ImageViewer::~ImageViewer() {
-    // delete rCheck;
-    // delete gCheck;
-    // delete bCheck;
-
-    // delete imgLabel;
 }
 
-void ImageViewer::redStateChanged(int state) {
-    if (state == Qt::Unchecked) {
-        channels &= ~RED;
-    } else {
-        channels |=  RED;
+void ImageViewer::shadingOptionChanged(int index) {
+    switch (index) {
+    case 0:
+        shadingOption = WHITE;
+        break;
+    case 1:
+        shadingOption = RANDOM;
+        break;
+    case 2:
+        shadingOption = NORM_FLAT;
+        break;
+    case 3:
+        shadingOption = NORM_GOURAUD;
+        break;
+    case 4:
+        shadingOption = NORM_GOURAUD_Z;
+        break;
+    case 5:
+        shadingOption = NORM_BARY;
+        break;
+    case 6:
+        shadingOption = NORM_BARY_Z;
+        break;
+    default:
+        break;
     }
-
-    qDebug() << channels;
-    
-    updateLabel();
-}
-
-void ImageViewer::greenStateChanged(int state) {
-    if (state == Qt::Unchecked) {
-        channels &= ~GREEN;
-    } else {
-        channels |=  GREEN;
-    }
-
-    qDebug() << channels;
-    
-    updateLabel();
-}
-
-void ImageViewer::blueStateChanged(int state) {
-    if (state == Qt::Unchecked) {
-        channels &= ~BLUE;
-    } else {
-        channels |=  BLUE;
-    }
-
-    qDebug() << channels;
-    
-    updateLabel();
-}
-
-void ImageViewer::updateLabel() {
-    imgLabel->setText(QString::number(channels));
 }
 
 void ImageViewer::open_obj() {
@@ -132,7 +152,7 @@ void ImageViewer::save() {
 }
 
 void ImageViewer::rasterize_wrapper() {
-    img = rasterize(obj_file.toStdString().c_str(), camera, 512, 512, WHITE);
+    img = rasterize(obj_file.toStdString().c_str(), camera, 512, 512, shadingOption);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
 }
