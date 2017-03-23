@@ -2,6 +2,7 @@
 #include <QString>
 #include <QColor>
 #include <QDebug>
+#include <QMessageBox>
 #include <fstream>
 #include <algorithm>
 
@@ -99,8 +100,11 @@ QImage rasterize(const char *obj, camera_mat_t& camera, int w, int h, e_shader s
     std::vector<tinyobj::material_t> materials;
     std::string err = tinyobj::LoadObj(shapes, materials, obj, mtl_path.c_str());
     if ("" != err) {
-        qDebug() << QString::fromStdString(err);
-        exit(1);
+        QMessageBox errorBox;
+        errorBox.setText("Cannot open file");
+        errorBox.setIcon(QMessageBox::Warning);
+        errorBox.exec();
+        return out;
     }
 
     std::vector<face_t> faces;

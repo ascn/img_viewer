@@ -11,6 +11,7 @@
 #include <QDockWidget>
 #include <QDoubleSpinBox>
 #include <QGroupBox>
+#include <QPushButton>
 
 #include "rasterize.h"
 
@@ -58,6 +59,7 @@ public slots:
    */
 
   void shadingOptionChanged(int index);
+  void rasterizeButtonClicked();
 
 private:
   QGroupBox *cameraDockContents;
@@ -95,7 +97,10 @@ private:
   QLabel *imgLabel;
   QPixmap pixmap;
   QImage img;
+  QLabel *objFileLabel;
+  QGroupBox *shadingGroup;
   QComboBox *shadingOptionBox;
+  QPushButton *rasterizeButton;
 
   QDockWidget *cameraDock;
 

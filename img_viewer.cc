@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QAction>
 #include <QMenu>
 #include <QMenuBar>
@@ -10,13 +11,14 @@
 #include <QDebug>
 #include <QGroupBox>
 #include <QDoubleSpinBox>
+#include <QPushButton>
 #include <string>
 
 #include "img_viewer.h"
 #include "tiny_obj_loader.h"
 
 ImageViewer::ImageViewer(QWidget *parent) :
-    QMainWindow(parent), channels(0) {
+    QMainWindow(parent) {
     imgLabel = new QLabel(this);
 
     QVBoxLayout *layout = new QVBoxLayout();
@@ -57,7 +59,7 @@ ImageViewer::ImageViewer(QWidget *parent) :
     cam_eye_x_box->setSingleStep(1);
 
 
-    cameraDock->addWidget(cameraDockContents);
+    //cameraDock->setWidget(cameraDockContents);
 
     cameraDock = new QDockWidget(tr("Camera options"), this);
     cameraDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
@@ -66,9 +68,16 @@ ImageViewer::ImageViewer(QWidget *parent) :
     createActions();
     createMenus();
 
-    img.load(QCoreApplication::arguments()[1]);
+    img = QImage(512, 512, QImage::Format_RGB888);
+    img.fill(qRgb(0, 0, 0));
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
+
+    objFileLabel = new QLabel(tr("No obj loaded"), this);
+    layout->addWidget(objFileLabel);
+
+    shadingGroup = new QGroupBox(tr(""));
+    QHBoxLayout *h_layout = new QHBoxLayout;
 
     shadingOptionBox = new QComboBox(this);
     shadingOptionBox->addItem(tr("White"));
@@ -79,7 +88,17 @@ ImageViewer::ImageViewer(QWidget *parent) :
     shadingOptionBox->addItem(tr("Barycentric"));
     shadingOptionBox->addItem(tr("Barycentric, perspective correct"));
 
-    layout->addWidget(shadingOptionBox);
+    h_layout->addWidget(shadingOptionBox);
+
+    rasterizeButton = new QPushButton("Rasterize", this);
+    connect(rasterizeButton, SIGNAL(clicked()),
+                             this, SLOT(rasterizeButtonClicked()));
+
+    h_layout->addWidget(rasterizeButton);
+
+    shadingGroup->setLayout(h_layout);
+
+    layout->addWidget(shadingGroup);
 
     shadingOptionBox->show();
     shadingOption = WHITE;
@@ -118,11 +137,18 @@ void ImageViewer::shadingOptionChanged(int index) {
     }
 }
 
+void ImageViewer::rasterizeButtonClicked() {
+    rasterize_wrapper();
+}
+
 void ImageViewer::open_obj() {
     obj_file = QFileDialog::getOpenFileName(this,
             tr("Open .obj..."), "./", tr("Object files (*.obj)"));
     qDebug() << obj_file;
     if (obj_file == "") { return; }
+    QString tmp("Loaded .obj: ");
+    tmp.append(obj_file);
+    objFileLabel->setText(tmp);
 }
 
 void ImageViewer::open_cam() {
@@ -163,11 +189,11 @@ void ImageViewer::createActions() {
     openObjAct->setStatusTip(tr("Open an .obj file"));
     connect(openObjAct, &QAction::triggered, this, &ImageViewer::open_obj);
 
-    openCamAct = new QAction(tr("&Open camera file"), this);
+    openCamAct = new QAction(tr("Open camera file"), this);
     openCamAct->setStatusTip(tr("Open a camera file"));
     connect(openCamAct, &QAction::triggered, this, &ImageViewer::open_cam);
 
-    openImgAct = new QAction(tr("&Open image"), this);
+    openImgAct = new QAction(tr("Open image"), this);
     openImgAct->setStatusTip(tr("Open an image"));
     connect(openImgAct, &QAction::triggered, this, &ImageViewer::open_img);
 
