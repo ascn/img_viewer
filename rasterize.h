@@ -30,9 +30,11 @@ typedef struct {
     mat4 view;
 } camera_mat_t;
 
-camera_mat_t load_camera(const char *file);
+camera_mat_t *load_camera(const char *file);
+
+void update_matrices(camera_mat_t *cam);
 
 typedef enum { NONE, WHITE, NORM_FLAT, NORM_GOURAUD, NORM_BARY,
                NORM_GOURAUD_Z, NORM_BARY_Z, RANDOM, TEXTURE } e_shader;
 
-QImage rasterize(const char *obj, camera_mat_t& camera, int w, int h, e_shader shading);
+QImage rasterize(const char *obj, camera_mat_t *camera, int w, int h, e_shader shading);

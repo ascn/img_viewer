@@ -60,6 +60,7 @@ public slots:
 
   void shadingOptionChanged(int index);
   void rasterizeButtonClicked();
+  void cameraOptionsChanged();
 
 private:
   QGroupBox *cameraDockContents;
@@ -105,7 +106,7 @@ private:
   QDockWidget *cameraDock;
 
   QString obj_file;
-  camera_mat_t camera;
+  camera_mat_t *camera;
   e_shader shadingOption;
 
   void createActions();

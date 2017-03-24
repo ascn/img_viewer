@@ -149,6 +149,37 @@ ImageViewer::ImageViewer(QWidget *parent) :
     cameraDockContents->setLayout(g_layout);
     cameraDock->setWidget(cameraDockContents);
 
+    connect(cam_left_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_right_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_bottom_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_top_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_near_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_far_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_eye_x_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_eye_y_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_eye_z_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_cen_x_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_cen_y_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_cen_z_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_up_x_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_up_y_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+    connect(cam_up_z_box, SIGNAL(valueChanged(double)),
+                          this, SLOT(cameraOptionsChanged()));
+
     createActions();
     createMenus();
 
@@ -191,6 +222,7 @@ ImageViewer::ImageViewer(QWidget *parent) :
 }
 
 ImageViewer::~ImageViewer() {
+    delete(camera);
 }
 
 void ImageViewer::shadingOptionChanged(int index) {
@@ -225,6 +257,26 @@ void ImageViewer::rasterizeButtonClicked() {
     rasterize_wrapper();
 }
 
+void ImageViewer::cameraOptionsChanged() {
+    camera->left = cam_left_box->value();
+    camera->right = cam_right_box->value();
+    camera->bottom = cam_bottom_box->value();
+    camera->top = cam_top_box->value();
+    camera->near = cam_near_box->value();
+    camera->far = cam_far_box->value();
+    camera->eye_x = cam_eye_x_box->value();
+    camera->eye_y = cam_eye_y_box->value();
+    camera->eye_z = cam_eye_z_box->value();
+    camera->c_x = cam_cen_x_box->value();
+    camera->c_y = cam_cen_y_box->value();
+    camera->c_z = cam_cen_z_box->value();
+    camera->up_x = cam_up_x_box->value();
+    camera->up_y = cam_up_y_box->value();
+    camera->up_z = cam_up_z_box->value();
+    update_matrices(camera);
+    rasterize_wrapper();
+}
+
 void ImageViewer::open_obj() {
     obj_file = QFileDialog::getOpenFileName(this,
             tr("Open .obj..."), "./", tr("Object files (*.obj)"));
@@ -238,7 +290,59 @@ void ImageViewer::open_obj() {
 void ImageViewer::open_cam() {
     QString filename = QFileDialog::getOpenFileName(this,
             tr("Open camera file"), "./", tr("Text files (*.txt)"));
-    camera = load_camera(filename.toStdString().c_str());
+    camera_mat_t *tmp = load_camera(filename.toStdString().c_str());
+    if (tmp == NULL) {
+        return;
+    }
+    camera = tmp;
+
+    cam_left_box->blockSignals(true);
+    cam_right_box->blockSignals(true);
+    cam_bottom_box->blockSignals(true);
+    cam_top_box->blockSignals(true);
+    cam_near_box->blockSignals(true);
+    cam_far_box->blockSignals(true);
+    cam_eye_x_box->blockSignals(true);
+    cam_eye_y_box->blockSignals(true);
+    cam_eye_z_box->blockSignals(true);
+    cam_cen_x_box->blockSignals(true);
+    cam_cen_y_box->blockSignals(true);
+    cam_cen_z_box->blockSignals(true);
+    cam_up_x_box->blockSignals(true);
+    cam_up_y_box->blockSignals(true);
+    cam_up_z_box->blockSignals(true);
+
+    cam_left_box->setValue(camera->left);
+    cam_right_box->setValue(camera->right);
+    cam_bottom_box->setValue(camera->bottom);
+    cam_top_box->setValue(camera->top);
+    cam_near_box->setValue(camera->near);
+    cam_far_box->setValue(camera->far);
+    cam_eye_x_box->setValue(camera->eye_x);
+    cam_eye_y_box->setValue(camera->eye_y);
+    cam_eye_z_box->setValue(camera->eye_z);
+    cam_cen_x_box->setValue(camera->c_x);
+    cam_cen_y_box->setValue(camera->c_y);
+    cam_cen_z_box->setValue(camera->c_z);
+    cam_up_x_box->setValue(camera->up_x);
+    cam_up_y_box->setValue(camera->up_y);
+    cam_up_z_box->setValue(camera->up_z);
+
+    cam_left_box->blockSignals(false);
+    cam_right_box->blockSignals(false);
+    cam_bottom_box->blockSignals(false);
+    cam_top_box->blockSignals(false);
+    cam_near_box->blockSignals(false);
+    cam_far_box->blockSignals(false);
+    cam_eye_x_box->blockSignals(false);
+    cam_eye_y_box->blockSignals(false);
+    cam_eye_z_box->blockSignals(false);
+    cam_cen_x_box->blockSignals(false);
+    cam_cen_y_box->blockSignals(false);
+    cam_cen_z_box->blockSignals(false);
+    cam_up_x_box->blockSignals(false);
+    cam_up_y_box->blockSignals(false);
+    cam_up_z_box->blockSignals(false);
 }
 
 void ImageViewer::open_img() {

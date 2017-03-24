@@ -25,53 +25,47 @@ float dist2(vec4 p1, vec4 p2) {
     return std::sqrt(std::pow((p1[0] - p2[0]), 2) + std::pow((p1[1] - p2[1]), 2));
 }
 
-camera_mat_t load_camera(const char *file) {
+camera_mat_t *load_camera(const char *file) {
     std::ifstream camera_file(file);
     if (!camera_file.is_open()) {
-        fprintf(stderr, "error: cannot open file %s\n", file);
-        exit(1);
+        QMessageBox errorBox;
+        errorBox.setText("Camera file not valid");
+        errorBox.setIcon(QMessageBox::Warning);
+        errorBox.exec();
+        return NULL;
     }
-    camera_mat_t ret;
-    camera_file >> ret.left;
-    camera_file >> ret.right;
-    camera_file >> ret.bottom;
-    camera_file >> ret.top;
-    camera_file >> ret.near;
-    camera_file >> ret.far;
-    qDebug() << "lrtbnf";
+    camera_mat_t *ret = new camera_mat_t;
+    camera_file >> ret->left;
+    camera_file >> ret->right;
+    camera_file >> ret->bottom;
+    camera_file >> ret->top;
+    camera_file >> ret->near;
+    camera_file >> ret->far;
 
-    ret.proj = mat4::proj(ret.left, ret.right, ret.top, ret.bottom, ret.near, ret.far);
+    ret->proj = mat4::proj(ret->left, ret->right, ret->top, ret->bottom, ret->near, ret->far);
     mat4 view_t;
-    camera_file >> ret.eye_x;
-    camera_file >> ret.eye_y;
-    camera_file >> ret.eye_z;
-    view_t[3][0] = -ret.eye_x;
-    view_t[3][1] = -ret.eye_y;
-    view_t[3][2] = -ret.eye_z;
-    qDebug() << "proj, eye";
+    camera_file >> ret->eye_x;
+    camera_file >> ret->eye_y;
+    camera_file >> ret->eye_z;
+    view_t[3][0] = -ret->eye_x;
+    view_t[3][1] = -ret->eye_y;
+    view_t[3][2] = -ret->eye_z;
 
     mat4 view_o;
-    camera_file >> ret.c_x;
-    camera_file >> ret.c_y;
-    camera_file >> ret.c_z;
-    float f_x = ret.c_x - ret.eye_x;
-    float f_y = ret.c_y - ret.eye_y;
-    float f_z = ret.c_z - ret.eye_z;
-    camera_file >> ret.up_x;
-    camera_file >> ret.up_y;
-    camera_file >> ret.up_z;
+    camera_file >> ret->c_x;
+    camera_file >> ret->c_y;
+    camera_file >> ret->c_z;
+    float f_x = ret->c_x - ret->eye_x;
+    float f_y = ret->c_y - ret->eye_y;
+    float f_z = ret->c_z - ret->eye_z;
+    camera_file >> ret->up_x;
+    camera_file >> ret->up_y;
+    camera_file >> ret->up_z;
     vec4 forward = vec4(f_x, f_y, f_z, 0);
-    qDebug() << f_x;
-    qDebug() << f_y;
-    qDebug() << f_z;
     forward.norm();
-    vec4 up = vec4(ret.up_x, ret.up_y, ret.up_z, 0);
-    qDebug() << up[0];
-    qDebug() << up[1];
-    qDebug() << up[2];
+    vec4 up = vec4(ret->up_x, ret->up_y, ret->up_z, 0);
     up.norm();
     vec4 x_axis = cross(forward, up);
-    qDebug() << "cross";
 
     view_o[0][0] = x_axis[0];
     view_o[1][0] = x_axis[1];
@@ -83,13 +77,42 @@ camera_mat_t load_camera(const char *file) {
     view_o[1][2] = forward[1];
     view_o[2][2] = forward[2];
 
-    ret.view = view_o * view_t;
-    qDebug() << "done";
+    ret->view = view_o * view_t;
 
     return ret;
 }
 
-QImage rasterize(const char *obj, camera_mat_t& camera, int w, int h, e_shader shading) {
+void update_matrices(camera_mat_t *cam) {
+    cam->proj = mat4::proj(cam->left, cam->right, cam->top, cam->bottom, cam->near, cam->far);
+    mat4 view_t;
+    view_t[3][0] = -cam->eye_x;
+    view_t[3][1] = -cam->eye_y;
+    view_t[3][2] = -cam->eye_z;
+
+    mat4 view_o;
+    float f_x = cam->c_x - cam->eye_x;
+    float f_y = cam->c_y - cam->eye_y;
+    float f_z = cam->c_z - cam->eye_z;
+    vec4 forward = vec4(f_x, f_y, f_z, 0);
+    forward.norm();
+    vec4 up = vec4(cam->up_x, cam->up_y, cam->up_z, 0);
+    up.norm();
+    vec4 x_axis = cross(forward, up);
+
+    view_o[0][0] = x_axis[0];
+    view_o[1][0] = x_axis[1];
+    view_o[2][0] = x_axis[2];
+    view_o[0][1] = up[0];
+    view_o[1][1] = up[1];
+    view_o[2][1] = up[2];
+    view_o[0][2] = forward[0];
+    view_o[1][2] = forward[1];
+    view_o[2][2] = forward[2];
+
+    cam->view = view_o * view_t;
+}
+
+QImage rasterize(const char *obj, camera_mat_t *camera, int w, int h, e_shader shading) {
 
     // Initialize output image
     QImage out(w, h, QImage::Format_RGB888);
@@ -109,7 +132,7 @@ QImage rasterize(const char *obj, camera_mat_t& camera, int w, int h, e_shader s
     std::string err = tinyobj::LoadObj(shapes, materials, obj, mtl_path.c_str());
     if ("" != err) {
         QMessageBox errorBox;
-        errorBox.setText("Cannot open file");
+        errorBox.setText(".obj file not valid");
         errorBox.setIcon(QMessageBox::Warning);
         errorBox.exec();
         return out;
@@ -146,9 +169,9 @@ QImage rasterize(const char *obj, camera_mat_t& camera, int w, int h, e_shader s
     }
 
     for (auto &f : faces) {
-        f.vert[0] = camera.proj * camera.view * f.vert[0];
-        f.vert[1] = camera.proj * camera.view * f.vert[1];
-        f.vert[2] = camera.proj * camera.view * f.vert[2];
+        f.vert[0] = camera->proj * camera->view * f.vert[0];
+        f.vert[1] = camera->proj * camera->view * f.vert[1];
+        f.vert[2] = camera->proj * camera->view * f.vert[2];
         f.vert[0] /= f.vert[0][3];
         f.vert[1] /= f.vert[1][3];
         f.vert[2] /= f.vert[2][3];
@@ -299,7 +322,7 @@ QImage rasterize(const char *obj, camera_mat_t& camera, int w, int h, e_shader s
                             out.setPixel(x, y - 0.5, qRgb(255, 255, 255));
                             break;
                         case NORM_FLAT: {
-                            vec4 view_n_1 = camera.view * f.normals[0];
+                            vec4 view_n_1 = camera->view * f.normals[0];
                             out.setPixel(x, y - 0.5, 
                                 qRgb((unsigned char) ((view_n_1[0] + 1) * 127.5),
                                      (unsigned char) ((view_n_1[1] + 1) * 127.5),
@@ -307,9 +330,9 @@ QImage rasterize(const char *obj, camera_mat_t& camera, int w, int h, e_shader s
                             break;
                         }
                         case NORM_GOURAUD: {
-                            vec4 view_n_1 = camera.view * f.normals[0];
-                            vec4 view_n_2 = camera.view * f.normals[1];
-                            vec4 view_n_3 = camera.view * f.normals[2];
+                            vec4 view_n_1 = camera->view * f.normals[0];
+                            vec4 view_n_2 = camera->view * f.normals[1];
+                            vec4 view_n_3 = camera->view * f.normals[2];
                             pixel_t c[3];
                             c[0] = { (unsigned char) ((view_n_1[0] + 1) * 127.5),
                                      (unsigned char) ((view_n_1[1] + 1) * 127.5),
@@ -348,9 +371,9 @@ QImage rasterize(const char *obj, camera_mat_t& camera, int w, int h, e_shader s
                             break;
                         }
                         case NORM_BARY: {
-                            vec4 view_n_1 = camera.view * f.normals[0];
-                            vec4 view_n_2 = camera.view * f.normals[1];
-                            vec4 view_n_3 = camera.view * f.normals[2];
+                            vec4 view_n_1 = camera->view * f.normals[0];
+                            vec4 view_n_2 = camera->view * f.normals[1];
+                            vec4 view_n_3 = camera->view * f.normals[2];
                             float r[3], g[3], b[3];
                             r[0] = (view_n_1[0] + 1) * 127.5; r[1] = (view_n_2[0] + 1) * 127.5; r[2] = (view_n_3[0] + 1) * 127.5;
                             g[0] = (view_n_1[1] + 1) * 127.5; g[1] = (view_n_2[1] + 1) * 127.5; g[2] = (view_n_3[1] + 1) * 127.5;
@@ -362,9 +385,9 @@ QImage rasterize(const char *obj, camera_mat_t& camera, int w, int h, e_shader s
                             break;
                         }
                         case NORM_GOURAUD_Z: {
-                            vec4 view_n_1 = camera.view * f.normals[0];
-                            vec4 view_n_2 = camera.view * f.normals[1];
-                            vec4 view_n_3 = camera.view * f.normals[2];
+                            vec4 view_n_1 = camera->view * f.normals[0];
+                            vec4 view_n_2 = camera->view * f.normals[1];
+                            vec4 view_n_3 = camera->view * f.normals[2];
                             pixel_t c[3];
                             c[0] = { (unsigned char) ((view_n_1[0] + 1) * 127.5),
                                      (unsigned char) ((view_n_1[1] + 1) * 127.5),
@@ -402,9 +425,9 @@ QImage rasterize(const char *obj, camera_mat_t& camera, int w, int h, e_shader s
                             break;
                         }
                         case NORM_BARY_Z: {
-                            vec4 view_n_1 = camera.view * f.normals[0];
-                            vec4 view_n_2 = camera.view * f.normals[1];
-                            vec4 view_n_3 = camera.view * f.normals[2];
+                            vec4 view_n_1 = camera->view * f.normals[0];
+                            vec4 view_n_2 = camera->view * f.normals[1];
+                            vec4 view_n_3 = camera->view * f.normals[2];
                             float r[3], g[3], b[3];
                             r[0] = (view_n_1[0] + 1) * 127.5; r[1] = (view_n_2[0] + 1) * 127.5; r[2] = (view_n_3[0] + 1) * 127.5;
                             g[0] = (view_n_1[1] + 1) * 127.5; g[1] = (view_n_2[1] + 1) * 127.5; g[2] = (view_n_3[1] + 1) * 127.5;
