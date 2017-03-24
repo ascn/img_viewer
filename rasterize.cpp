@@ -31,40 +31,47 @@ camera_mat_t load_camera(const char *file) {
         fprintf(stderr, "error: cannot open file %s\n", file);
         exit(1);
     }
-    float left, right, top, bottom, near, far;
-    camera_file >> left;
-    camera_file >> right;
-    camera_file >> bottom;
-    camera_file >> top;
-    camera_file >> near;
-    camera_file >> far;
-
     camera_mat_t ret;
-    ret.proj = mat4::proj(left, right, top, bottom, near, far);
+    camera_file >> ret.left;
+    camera_file >> ret.right;
+    camera_file >> ret.bottom;
+    camera_file >> ret.top;
+    camera_file >> ret.near;
+    camera_file >> ret.far;
+    qDebug() << "lrtbnf";
+
+    ret.proj = mat4::proj(ret.left, ret.right, ret.top, ret.bottom, ret.near, ret.far);
     mat4 view_t;
-    float eye_x, eye_y, eye_z, c_x, c_y, c_z, u_x, u_y, u_z;
-    camera_file >> eye_x;
-    camera_file >> eye_y;
-    camera_file >> eye_z;
-    view_t[3][0] = -eye_x;
-    view_t[3][1] = -eye_y;
-    view_t[3][2] = -eye_z;
+    camera_file >> ret.eye_x;
+    camera_file >> ret.eye_y;
+    camera_file >> ret.eye_z;
+    view_t[3][0] = -ret.eye_x;
+    view_t[3][1] = -ret.eye_y;
+    view_t[3][2] = -ret.eye_z;
+    qDebug() << "proj, eye";
 
     mat4 view_o;
-    camera_file >> c_x;
-    camera_file >> c_y;
-    camera_file >> c_z;
-    float f_x = c_x - eye_x;
-    float f_y = c_y - eye_y;
-    float f_z = c_z - eye_z;
-    camera_file >> u_x;
-    camera_file >> u_y;
-    camera_file >> u_z;
+    camera_file >> ret.c_x;
+    camera_file >> ret.c_y;
+    camera_file >> ret.c_z;
+    float f_x = ret.c_x - ret.eye_x;
+    float f_y = ret.c_y - ret.eye_y;
+    float f_z = ret.c_z - ret.eye_z;
+    camera_file >> ret.up_x;
+    camera_file >> ret.up_y;
+    camera_file >> ret.up_z;
     vec4 forward = vec4(f_x, f_y, f_z, 0);
+    qDebug() << f_x;
+    qDebug() << f_y;
+    qDebug() << f_z;
     forward.norm();
-    vec4 up = vec4(u_x, u_y, u_z, 0);
+    vec4 up = vec4(ret.up_x, ret.up_y, ret.up_z, 0);
+    qDebug() << up[0];
+    qDebug() << up[1];
+    qDebug() << up[2];
     up.norm();
     vec4 x_axis = cross(forward, up);
+    qDebug() << "cross";
 
     view_o[0][0] = x_axis[0];
     view_o[1][0] = x_axis[1];
@@ -77,6 +84,7 @@ camera_mat_t load_camera(const char *file) {
     view_o[2][2] = forward[2];
 
     ret.view = view_o * view_t;
+    qDebug() << "done";
 
     return ret;
 }

@@ -21,6 +21,11 @@ typedef struct {
 } face_t;
 
 typedef struct {
+    float left, right, bottom, top;
+    float near, far;
+    float eye_x, eye_y, eye_z;
+    float c_x, c_y, c_z;
+    float up_x, up_y, up_z;
     mat4 proj;
     mat4 view;
 } camera_mat_t;

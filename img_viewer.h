@@ -81,7 +81,7 @@ private:
   QLabel *cam_left_label;
   QLabel *cam_right_label;
   QLabel *cam_bottom_label;
-  QLabel *cam_up_label;
+  QLabel *cam_top_label;
   QLabel *cam_near_label;
   QLabel *cam_far_label;
   QLabel *cam_eye_x_label;

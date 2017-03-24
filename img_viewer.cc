@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
 #include <QAction>
 #include <QMenu>
 #include <QMenuBar>
@@ -12,6 +13,7 @@
 #include <QGroupBox>
 #include <QDoubleSpinBox>
 #include <QPushButton>
+#include <QSpacerItem>
 #include <string>
 
 #include "img_viewer.h"
@@ -30,7 +32,12 @@ ImageViewer::ImageViewer(QWidget *parent) :
 
     imgLabel->show();
 
-    cameraDockContents = new QGroupBox(tr("Camera options"));
+    QGridLayout *g_layout = new QGridLayout;
+    qDebug() << g_layout->verticalSpacing();
+    g_layout->setVerticalSpacing(5);
+    qDebug() << g_layout->verticalSpacing();
+
+    cameraDockContents = new QGroupBox(tr(""));
 
     cam_left_box = new QDoubleSpinBox(cameraDockContents);
     cam_left_box->setRange(-1, 1);
@@ -57,13 +64,90 @@ ImageViewer::ImageViewer(QWidget *parent) :
     cam_eye_x_box = new QDoubleSpinBox(cameraDockContents);
     cam_eye_x_box->setRange(-100, 100);
     cam_eye_x_box->setSingleStep(1);
+    cam_eye_y_box = new QDoubleSpinBox(cameraDockContents);
+    cam_eye_y_box->setRange(-100, 100);
+    cam_eye_y_box->setSingleStep(1);
+    cam_eye_z_box = new QDoubleSpinBox(cameraDockContents);
+    cam_eye_z_box->setRange(-100, 100);
+    cam_eye_z_box->setSingleStep(1);
+    cam_cen_x_box = new QDoubleSpinBox(cameraDockContents);
+    cam_cen_x_box->setRange(-100, 100);
+    cam_cen_x_box->setSingleStep(1);
+    cam_cen_y_box = new QDoubleSpinBox(cameraDockContents);
+    cam_cen_y_box->setRange(-100, 100);
+    cam_cen_y_box->setSingleStep(1);
+    cam_cen_z_box = new QDoubleSpinBox(cameraDockContents);
+    cam_cen_z_box->setRange(-100, 100);
+    cam_cen_z_box->setSingleStep(1);
+    cam_up_x_box = new QDoubleSpinBox(cameraDockContents);
+    cam_up_x_box->setRange(-100, 100);
+    cam_up_x_box->setSingleStep(1);
+    cam_up_y_box = new QDoubleSpinBox(cameraDockContents);
+    cam_up_y_box->setRange(-100, 100);
+    cam_up_y_box->setSingleStep(1);
+    cam_up_z_box = new QDoubleSpinBox(cameraDockContents);
+    cam_up_z_box->setRange(-100, 100);
+    cam_up_z_box->setSingleStep(1);
 
-
-    //cameraDock->setWidget(cameraDockContents);
+    cam_left_label = new QLabel(tr("Left: "), cameraDockContents);
+    cam_right_label = new QLabel(tr("Right: "), cameraDockContents);
+    cam_bottom_label = new QLabel(tr("Bottom: "), cameraDockContents);
+    cam_top_label = new QLabel(tr("Top: "), cameraDockContents);
+    cam_near_label = new QLabel(tr("Near: "), cameraDockContents);
+    cam_far_label = new QLabel(tr("Far: "), cameraDockContents);
+    cam_eye_x_label = new QLabel(tr("Eye (x): "), cameraDockContents);
+    cam_eye_y_label = new QLabel(tr("Eye (y): "), cameraDockContents);
+    cam_eye_z_label = new QLabel(tr("Eye (z): "), cameraDockContents);
+    cam_cen_x_label = new QLabel(tr("Center (x): "), cameraDockContents);
+    cam_cen_y_label = new QLabel(tr("Center (y): "), cameraDockContents);
+    cam_cen_z_label = new QLabel(tr("Center (z): "), cameraDockContents);
+    cam_up_x_label = new QLabel(tr("Up (x): "), cameraDockContents);
+    cam_up_y_label = new QLabel(tr("Up (y): "), cameraDockContents);
+    cam_up_z_label = new QLabel(tr("Up (z): "), cameraDockContents);
 
     cameraDock = new QDockWidget(tr("Camera options"), this);
     cameraDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     addDockWidget(Qt::RightDockWidgetArea, cameraDock);
+
+    QSpacerItem *spacer = new QSpacerItem(
+                    40, 20, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+    g_layout->addWidget(cam_left_box, 0, 1);
+    g_layout->addWidget(cam_right_box, 1, 1);
+    g_layout->addWidget(cam_bottom_box, 2, 1);
+    g_layout->addWidget(cam_top_box, 3, 1);
+    g_layout->addWidget(cam_near_box, 4, 1);
+    g_layout->addWidget(cam_far_box, 5, 1);
+    g_layout->addWidget(cam_eye_x_box, 0, 3);
+    g_layout->addWidget(cam_eye_y_box, 1, 3);
+    g_layout->addWidget(cam_eye_z_box, 2, 3);
+    g_layout->addWidget(cam_cen_x_box, 3, 3);
+    g_layout->addWidget(cam_cen_y_box, 4, 3);
+    g_layout->addWidget(cam_cen_z_box, 5, 3);
+    g_layout->addWidget(cam_up_x_box, 6, 3);
+    g_layout->addWidget(cam_up_y_box, 7, 3);
+    g_layout->addWidget(cam_up_z_box, 8, 3);
+
+    g_layout->addWidget(cam_left_label, 0, 0, Qt::AlignRight);
+    g_layout->addWidget(cam_right_label, 1, 0, Qt::AlignRight);
+    g_layout->addWidget(cam_bottom_label, 2, 0, Qt::AlignRight);
+    g_layout->addWidget(cam_top_label, 3, 0, Qt::AlignRight);
+    g_layout->addWidget(cam_near_label, 4, 0, Qt::AlignRight);
+    g_layout->addWidget(cam_far_label, 5, 0, Qt::AlignRight);
+    g_layout->addWidget(cam_eye_x_label, 0, 2, Qt::AlignRight);
+    g_layout->addWidget(cam_eye_y_label, 1, 2, Qt::AlignRight);
+    g_layout->addWidget(cam_eye_z_label, 2, 2, Qt::AlignRight);
+    g_layout->addWidget(cam_cen_x_label, 3, 2, Qt::AlignRight);
+    g_layout->addWidget(cam_cen_y_label, 4, 2, Qt::AlignRight);
+    g_layout->addWidget(cam_cen_z_label, 5, 2, Qt::AlignRight);
+    g_layout->addWidget(cam_up_x_label, 6, 2, Qt::AlignRight);
+    g_layout->addWidget(cam_up_y_label, 7, 2, Qt::AlignRight);
+    g_layout->addWidget(cam_up_z_label, 8, 2, Qt::AlignRight);
+
+    g_layout->addItem(spacer, 9, 0, -1, -1, Qt::AlignTop);
+
+    cameraDockContents->setLayout(g_layout);
+    cameraDock->setWidget(cameraDockContents);
 
     createActions();
     createMenus();
@@ -147,14 +231,13 @@ void ImageViewer::open_obj() {
     qDebug() << obj_file;
     if (obj_file == "") { return; }
     QString tmp("Loaded .obj: ");
-    tmp.append(obj_file);
+    tmp.append(obj_file.right(obj_file.size() - obj_file.lastIndexOf('/') - 1));
     objFileLabel->setText(tmp);
 }
 
 void ImageViewer::open_cam() {
     QString filename = QFileDialog::getOpenFileName(this,
             tr("Open camera file"), "./", tr("Text files (*.txt)"));
-    qDebug() << filename;
     camera = load_camera(filename.toStdString().c_str());
 }
 
@@ -171,7 +254,6 @@ void ImageViewer::save() {
     QString filename = QFileDialog::getSaveFileName(this,
             tr("Save image"), "./",
             tr("Image files (*.ppm *.png *.jpg *.bmp)"));
-    qDebug() << filename;
     if (filename == "") { return; }
     img.save(filename);
 
