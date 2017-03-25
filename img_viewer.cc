@@ -16,9 +16,11 @@
 #include <QSpacerItem>
 #include <QMessageBox>
 #include <QSpinBox>
+#include <QProgressBar>
 #include <string>
 
 #include <iostream>
+#include "ImageViewControls.h"
 #include "img_viewer.h"
 #include "tiny_obj_loader.h"
 #include "im_op.h"
@@ -28,7 +30,7 @@ ImageViewer::ImageViewer(QWidget *parent) :
 
     this->setWindowTitle("Rasterizer and Image Viewer");
 
-    imgLabel = new QLabel(this);
+    imgLabel = new ImageViewControls(this);
 
     QVBoxLayout *layout = new QVBoxLayout();
     // setLayout(layout); // doesn't work for main windows
@@ -36,13 +38,10 @@ ImageViewer::ImageViewer(QWidget *parent) :
     centralWidget()->setLayout(layout);
 
     layout->addWidget(imgLabel);
-
     imgLabel->show();
 
     createCameraDock();
-
     createFilterDock();
-
     createActions();
     createMenus();
 
@@ -254,7 +253,7 @@ void ImageViewer::addOperationForUndo() {
     undoStack.push(img.copy());
     undoAct->setEnabled(true);
     redoStack.clear();
-    redoStack->setEnabled(false);
+    redoAct->setEnabled(false);
 }
 
 void ImageViewer::rasterize_wrapper() {
@@ -286,6 +285,34 @@ void ImageViewer::flop_wrapper() {
     imgLabel->setPixmap(pixmap);
 }
 
+void ImageViewer::transpose_wrapper() {
+    addOperationForUndo();
+    img = transpose(&img);
+    pixmap = QPixmap::fromImage(img);
+    imgLabel->setPixmap(pixmap);
+}
+
+void ImageViewer::boxBlur_wrapper() {
+    addOperationForUndo();
+    img = boxBlur(&img, boxBlurRadiusBox->value(), filterProgress);
+    pixmap = QPixmap::fromImage(img);
+    imgLabel->setPixmap(pixmap);
+}
+
+void ImageViewer::medianFilter_wrapper() {
+    addOperationForUndo();
+    img = medianFilter(&img, medianFilterRadiusBox->value(), filterProgress);
+    pixmap = QPixmap::fromImage(img);
+    imgLabel->setPixmap(pixmap);
+}
+
+void ImageViewer::sobel_wrapper() {
+    addOperationForUndo();
+    img = sobel(&img);
+    pixmap = QPixmap::fromImage(img);
+    imgLabel->setPixmap(pixmap);
+}
+
 void ImageViewer::createCameraDock() {
     QGridLayout *cameraDockLayout = new QGridLayout;
     cameraDockLayout->setVerticalSpacing(5);
@@ -296,52 +323,67 @@ void ImageViewer::createCameraDock() {
     cam_left_box->setRange(-1, 1);
     cam_left_box->setSingleStep(0.001);
     cam_left_box->setDecimals(6);
+    cam_left_box->setKeyboardTracking(false);
     cam_right_box = new QDoubleSpinBox(cameraDockContents);
     cam_right_box->setRange(-1, 1);
     cam_right_box->setSingleStep(0.001);
     cam_right_box->setDecimals(6);
+    cam_right_box->setKeyboardTracking(false);
     cam_bottom_box = new QDoubleSpinBox(cameraDockContents);
     cam_bottom_box->setRange(-1, 1);
     cam_bottom_box->setSingleStep(0.001);
     cam_bottom_box->setDecimals(6);
+    cam_bottom_box->setKeyboardTracking(false);
     cam_top_box = new QDoubleSpinBox(cameraDockContents);
     cam_top_box->setRange(-1, 1);
     cam_top_box->setSingleStep(0.001);
     cam_top_box->setDecimals(6);
+    cam_top_box->setKeyboardTracking(false);
 
     cam_near_box = new QDoubleSpinBox(cameraDockContents);
     cam_near_box->setRange(0, 100);
     cam_near_box->setSingleStep(0.01);
+    cam_near_box->setKeyboardTracking(false);
     cam_far_box = new QDoubleSpinBox(cameraDockContents);
     cam_far_box->setRange(10, 1000);
+    cam_far_box->setKeyboardTracking(false);
 
     cam_eye_x_box = new QDoubleSpinBox(cameraDockContents);
     cam_eye_x_box->setRange(-100, 100);
     cam_eye_x_box->setSingleStep(1);
+    cam_eye_x_box->setKeyboardTracking(false);
     cam_eye_y_box = new QDoubleSpinBox(cameraDockContents);
     cam_eye_y_box->setRange(-100, 100);
     cam_eye_y_box->setSingleStep(1);
+    cam_eye_y_box->setKeyboardTracking(false);
     cam_eye_z_box = new QDoubleSpinBox(cameraDockContents);
     cam_eye_z_box->setRange(-100, 100);
     cam_eye_z_box->setSingleStep(1);
+    cam_eye_z_box->setKeyboardTracking(false);
     cam_cen_x_box = new QDoubleSpinBox(cameraDockContents);
     cam_cen_x_box->setRange(-100, 100);
     cam_cen_x_box->setSingleStep(1);
+    cam_cen_x_box->setKeyboardTracking(false);
     cam_cen_y_box = new QDoubleSpinBox(cameraDockContents);
     cam_cen_y_box->setRange(-100, 100);
     cam_cen_y_box->setSingleStep(1);
+    cam_cen_y_box->setKeyboardTracking(false);
     cam_cen_z_box = new QDoubleSpinBox(cameraDockContents);
     cam_cen_z_box->setRange(-100, 100);
     cam_cen_z_box->setSingleStep(1);
+    cam_cen_z_box->setKeyboardTracking(false);
     cam_up_x_box = new QDoubleSpinBox(cameraDockContents);
     cam_up_x_box->setRange(-100, 100);
     cam_up_x_box->setSingleStep(1);
+    cam_up_x_box->setKeyboardTracking(false);
     cam_up_y_box = new QDoubleSpinBox(cameraDockContents);
     cam_up_y_box->setRange(-100, 100);
     cam_up_y_box->setSingleStep(1);
+    cam_up_y_box->setKeyboardTracking(false);
     cam_up_z_box = new QDoubleSpinBox(cameraDockContents);
     cam_up_z_box->setRange(-100, 100);
     cam_up_z_box->setSingleStep(1);
+    cam_up_z_box->setKeyboardTracking(false);
 
     cam_left_label = new QLabel(tr("Left: "), cameraDockContents);
     cam_right_label = new QLabel(tr("Right: "), cameraDockContents);
@@ -359,7 +401,7 @@ void ImageViewer::createCameraDock() {
     cam_up_y_label = new QLabel(tr("Up (y): "), cameraDockContents);
     cam_up_z_label = new QLabel(tr("Up (z): "), cameraDockContents);
 
-    saveCameraParamButton = new QPushButton(tr("Save camera"), this);
+    saveCameraParamButton = new QPushButton(tr("Save camera"), cameraDockContents);
 
     cameraDock = new QDockWidget(tr("Camera options"), this);
     cameraDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
@@ -451,20 +493,23 @@ void ImageViewer::createFilterDock() {
     flopButton = new QPushButton(tr("Flop"), filterDockContents);
     transposeButton = new QPushButton(tr("Transpose"), filterDockContents);
     boxBlurButton = new QPushButton(tr("Box blur"), filterDockContents);
-    medianBlurButton = new QPushButton(tr("Median blur"), filterDockContents);
+    medianFilterButton = new QPushButton(tr("Median filter"), filterDockContents);
     gaussianBlurButton = new QPushButton(tr("Gaussian blur"), filterDockContents);
     sobelButton = new QPushButton(tr("Sobel"), filterDockContents);
     resizeButton = new QPushButton(tr("Resize"), filterDockContents);
 
     boxBlurRadiusBox = new QSpinBox(filterDockContents);
-    medianBlurRadiusBox = new QSpinBox(filterDockContents);
+    boxBlurRadiusBox->setRange(1, 255);
+    medianFilterRadiusBox = new QSpinBox(filterDockContents);
+    medianFilterRadiusBox->setRange(1, 255);
     gaussianBlurRadiusBox = new QSpinBox(filterDockContents);
+    gaussianBlurRadiusBox->setRange(1, 255);
     gaussianBlurSigmaBox = new QDoubleSpinBox(filterDockContents);
     resizeWidthBox = new QSpinBox(filterDockContents);
     resizeHeightBox = new QSpinBox(filterDockContents);
 
     boxBlurRadiusLabel = new QLabel(tr("Radius: "), filterDockContents);
-    medianBlurRadiusLabel = new QLabel(tr("Radius: "), filterDockContents);
+    medianFilterRadiusLabel = new QLabel(tr("Radius: "), filterDockContents);
     gaussianBlurRadiusLabel = new QLabel(tr("Radius: "), filterDockContents);
     gaussianBlurSigmaLabel = new QLabel(tr("Sigma: "), filterDockContents);
     resizeWidthLabel = new QLabel(tr("Width: "), filterDockContents);
@@ -478,9 +523,9 @@ void ImageViewer::createFilterDock() {
     filterDockLayout->addWidget(boxBlurRadiusLabel, 5, 0, 1, 1, Qt::AlignRight);
     filterDockLayout->addWidget(boxBlurRadiusBox, 5, 1, 1, 1);
     filterDockLayout->addWidget(sobelButton, 6, 0, 1, 2);
-    filterDockLayout->addWidget(medianBlurButton, 0, 2, 1, 2);
-    filterDockLayout->addWidget(medianBlurRadiusLabel, 1, 2, 1, 1, Qt::AlignRight);
-    filterDockLayout->addWidget(medianBlurRadiusBox, 1, 3, 1, 1);
+    filterDockLayout->addWidget(medianFilterButton, 0, 2, 1, 2);
+    filterDockLayout->addWidget(medianFilterRadiusLabel, 1, 2, 1, 1, Qt::AlignRight);
+    filterDockLayout->addWidget(medianFilterRadiusBox, 1, 3, 1, 1);
     filterDockLayout->addWidget(gaussianBlurButton, 2, 2, 1, 2);
     filterDockLayout->addWidget(gaussianBlurRadiusLabel, 3, 2, 1, 1, Qt::AlignRight);
     filterDockLayout->addWidget(gaussianBlurRadiusBox, 3, 3, 1, 1);
@@ -492,9 +537,13 @@ void ImageViewer::createFilterDock() {
     filterDockLayout->addWidget(resizeHeightLabel, 7, 2, 1, 1, Qt::AlignRight);
     filterDockLayout->addWidget(resizeHeightBox, 7, 3, 1, 1);
 
+    filterProgress = new QProgressBar(filterDockContents);
+    filterProgress->setValue(0);
+    filterDockLayout->addWidget(filterProgress, 8, 0, 1, -1);
+
     QSpacerItem *spacer = new QSpacerItem(
                     40, 20, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    filterDockLayout->addItem(spacer, 8, 0, -1, -1, Qt::AlignTop);
+    filterDockLayout->addItem(spacer, 9, 0, -1, -1, Qt::AlignTop);
 
     filterDock = new QDockWidget(tr("Filters"), this);
     filterDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
@@ -508,7 +557,14 @@ void ImageViewer::createFilterDock() {
                         this, SLOT(flip_wrapper()));
     connect(flopButton, SIGNAL(clicked()),
                         this, SLOT(flop_wrapper()));
-
+    connect(transposeButton, SIGNAL(clicked()),
+                             this, SLOT(transpose_wrapper()));
+    connect(boxBlurButton, SIGNAL(clicked()),
+                           this, SLOT(boxBlur_wrapper()));
+    connect(medianFilterButton, SIGNAL(clicked()),
+                                this, SLOT(medianFilter_wrapper()));
+    connect(sobelButton, SIGNAL(clicked()),
+                         this, SLOT(sobel_wrapper()));
 }
 
 void ImageViewer::createActions() {

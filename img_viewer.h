@@ -14,7 +14,9 @@
 #include <QGroupBox>
 #include <QPushButton>
 #include <QStack>
+#include <QProgressBar>
 
+#include "ImageViewControls.h"
 #include "rasterize.h"
 
 // ":" is just like "extends" in Java
@@ -94,26 +96,27 @@ private:
   QPushButton *saveCameraParamButton;
 
   void createFilterDock();
+  QProgressBar *filterProgress;
   QGroupBox *filterDockContents;
   QPushButton *grayscaleButton;
   QPushButton *flipButton;
   QPushButton *flopButton;
   QPushButton *transposeButton;
   QPushButton *boxBlurButton;
-  QPushButton *medianBlurButton;
+  QPushButton *medianFilterButton;
   QPushButton *gaussianBlurButton;
   QPushButton *sobelButton;
   QPushButton *resizeButton;
 
   QSpinBox *boxBlurRadiusBox;
-  QSpinBox *medianBlurRadiusBox;
+  QSpinBox *medianFilterRadiusBox;
   QSpinBox *gaussianBlurRadiusBox;
   QDoubleSpinBox *gaussianBlurSigmaBox;
   QSpinBox *resizeWidthBox;
   QSpinBox *resizeHeightBox;
 
   QLabel *boxBlurRadiusLabel;
-  QLabel *medianBlurRadiusLabel;
+  QLabel *medianFilterRadiusLabel;
   QLabel *gaussianBlurRadiusLabel;
   QLabel *gaussianBlurSigmaLabel;
   QLabel *resizeWidthLabel;
@@ -121,7 +124,7 @@ private:
 
   QDockWidget *filterDock;
 
-  QLabel *imgLabel;
+  ImageViewControls *imgLabel;
   QPixmap pixmap;
   QImage img;
   QLabel *objFileLabel;
@@ -163,6 +166,10 @@ private slots:
   void grayscale_wrapper();
   void flip_wrapper();
   void flop_wrapper();
+  void transpose_wrapper();
+  void boxBlur_wrapper();
+  void medianFilter_wrapper();
+  void sobel_wrapper();
 };
 
 #endif /* IMG_VIEWER_H */
