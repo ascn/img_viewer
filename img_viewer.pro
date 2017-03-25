@@ -14,7 +14,8 @@ SOURCES += img_viewer.cc \
     ppm.cpp \
     rasterize.cpp \
     tiny_obj_loader.cc \
-    vec4.cpp
+    vec4.cpp \
+    im_op.cpp
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings
@@ -36,4 +37,5 @@ HEADERS += \
     ppm.h \
     rasterize.h \
     tiny_obj_loader.h \
-    vec4.h
+    vec4.h \
+    im_op.h

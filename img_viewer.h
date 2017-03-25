@@ -9,9 +9,11 @@
 #include <QMenu>
 #include <QComboBox>
 #include <QDockWidget>
+#include <QSpinBox>
 #include <QDoubleSpinBox>
 #include <QGroupBox>
 #include <QPushButton>
+#include <QStack>
 
 #include "rasterize.h"
 
@@ -20,13 +22,6 @@ class ImageViewer : public QMainWindow {
   Q_OBJECT // no ; required.  Put this inside any Qt GUI class
 
 public:
-  // enums are a convenient way of defining constants
-  // By default they map to 0, 1, 2, ..., unless you specify otherwise
-  // (This is different from Java, where enums are not numeric.)
-  //
-  // RED, GREEN, BLUE are all powers of two so we can | the values
-  // together to specify multiple color channels in a single int
-  enum { RED = 1, GREEN = 2, BLUE = 4 };
 
   
   // "explicit" means only use this constructor when you instantiate
@@ -64,6 +59,7 @@ public slots:
 
 private:
   void blockCameraOptionSignals(bool b);
+  void createCameraDock();
   QGroupBox *cameraDockContents;
   QDoubleSpinBox *cam_left_box;
   QDoubleSpinBox *cam_right_box;
@@ -97,6 +93,34 @@ private:
   QLabel *cam_up_z_label;
   QPushButton *saveCameraParamButton;
 
+  void createFilterDock();
+  QGroupBox *filterDockContents;
+  QPushButton *grayscaleButton;
+  QPushButton *flipButton;
+  QPushButton *flopButton;
+  QPushButton *transposeButton;
+  QPushButton *boxBlurButton;
+  QPushButton *medianBlurButton;
+  QPushButton *gaussianBlurButton;
+  QPushButton *sobelButton;
+  QPushButton *resizeButton;
+
+  QSpinBox *boxBlurRadiusBox;
+  QSpinBox *medianBlurRadiusBox;
+  QSpinBox *gaussianBlurRadiusBox;
+  QDoubleSpinBox *gaussianBlurSigmaBox;
+  QSpinBox *resizeWidthBox;
+  QSpinBox *resizeHeightBox;
+
+  QLabel *boxBlurRadiusLabel;
+  QLabel *medianBlurRadiusLabel;
+  QLabel *gaussianBlurRadiusLabel;
+  QLabel *gaussianBlurSigmaLabel;
+  QLabel *resizeWidthLabel;
+  QLabel *resizeHeightLabel;
+
+  QDockWidget *filterDock;
+
   QLabel *imgLabel;
   QPixmap pixmap;
   QImage img;
@@ -111,13 +135,19 @@ private:
   camera_mat_t *camera;
   e_shader shadingOption;
 
+  QStack<QImage> undoStack;
+  QStack<QImage> redoStack;
+
   void createActions();
   void createMenus();
   QMenu *fileMenu;
+  QMenu *editMenu;
   QAction *openObjAct;
   QAction *openCamAct;
   QAction *openImgAct;
   QAction *saveImgAct;
+  QAction *undoAct;
+  QAction *redoAct;
   QAction *rasterizeAct;
 
 private slots:
@@ -125,8 +155,13 @@ private slots:
   void open_cam();
   void open_img();
   void save();
+  void undo();
+  void redo();
   void rasterize_wrapper();
   void saveCamera();
+  void grayscale_wrapper();
+  void flip_wrapper();
+  void flop_wrapper();
 };
 
 #endif /* IMG_VIEWER_H */
