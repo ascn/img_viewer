@@ -1,0 +1,8 @@
+help log:
+
+http://doc.qt.io/qt-5/qpixmap.html
+http://doc.qt.io/qt-5/qimage.html
+http://doc.qt.io/qt-5/qtwidgets-module.html
+http://doc.qt.io/qt-5/qcombobox.html#activated-1
+http://doc.qt.io/qt-4.8/qmainwindow.html
+http://doc.qt.io/qt-5/qdoublespinbox.html#decimals-prop

@@ -14,8 +14,11 @@
 #include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QSpacerItem>
+#include <QMessageBox>
 #include <string>
 
+
+#include <iostream>
 #include "img_viewer.h"
 #include "tiny_obj_loader.h"
 
@@ -41,23 +44,24 @@ ImageViewer::ImageViewer(QWidget *parent) :
 
     cam_left_box = new QDoubleSpinBox(cameraDockContents);
     cam_left_box->setRange(-1, 1);
-    cam_left_box->setSingleStep(0.01);
+    cam_left_box->setSingleStep(0.001);
     cam_left_box->setDecimals(6);
     cam_right_box = new QDoubleSpinBox(cameraDockContents);
     cam_right_box->setRange(-1, 1);
-    cam_right_box->setSingleStep(0.01);
+    cam_right_box->setSingleStep(0.001);
     cam_right_box->setDecimals(6);
     cam_bottom_box = new QDoubleSpinBox(cameraDockContents);
     cam_bottom_box->setRange(-1, 1);
-    cam_bottom_box->setSingleStep(0.01);
+    cam_bottom_box->setSingleStep(0.001);
     cam_bottom_box->setDecimals(6);
     cam_top_box = new QDoubleSpinBox(cameraDockContents);
     cam_top_box->setRange(-1, 1);
-    cam_top_box->setSingleStep(0.01);
+    cam_top_box->setSingleStep(0.001);
     cam_top_box->setDecimals(6);
 
     cam_near_box = new QDoubleSpinBox(cameraDockContents);
-    cam_near_box->setRange(0.1, 100);
+    cam_near_box->setRange(0, 100);
+    cam_near_box->setSingleStep(0.01);
     cam_far_box = new QDoubleSpinBox(cameraDockContents);
     cam_far_box->setRange(10, 1000);
 
@@ -105,6 +109,8 @@ ImageViewer::ImageViewer(QWidget *parent) :
     cam_up_y_label = new QLabel(tr("Up (y): "), cameraDockContents);
     cam_up_z_label = new QLabel(tr("Up (z): "), cameraDockContents);
 
+    saveCameraParamButton = new QPushButton(tr("Save camera"), this);
+
     cameraDock = new QDockWidget(tr("Camera options"), this);
     cameraDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     addDockWidget(Qt::RightDockWidgetArea, cameraDock);
@@ -127,6 +133,8 @@ ImageViewer::ImageViewer(QWidget *parent) :
     g_layout->addWidget(cam_up_x_box, 6, 3);
     g_layout->addWidget(cam_up_y_box, 7, 3);
     g_layout->addWidget(cam_up_z_box, 8, 3);
+
+    g_layout->addWidget(saveCameraParamButton, 7, 1);
 
     g_layout->addWidget(cam_left_label, 0, 0, Qt::AlignRight);
     g_layout->addWidget(cam_right_label, 1, 0, Qt::AlignRight);
@@ -179,6 +187,8 @@ ImageViewer::ImageViewer(QWidget *parent) :
                           this, SLOT(cameraOptionsChanged()));
     connect(cam_up_z_box, SIGNAL(valueChanged(double)),
                           this, SLOT(cameraOptionsChanged()));
+    connect(saveCameraParamButton, SIGNAL(clicked()),
+                                   this, SLOT(saveCamera()));
 
     createActions();
     createMenus();
@@ -254,6 +264,12 @@ void ImageViewer::shadingOptionChanged(int index) {
 }
 
 void ImageViewer::rasterizeButtonClicked() {
+    if (obj_file == "") {
+        QMessageBox errorBox;
+        errorBox.setText("Please open an .obj file");
+        errorBox.setIcon(QMessageBox::Warning);
+        errorBox.exec();
+    }
     rasterize_wrapper();
 }
 
@@ -277,6 +293,14 @@ void ImageViewer::cameraOptionsChanged() {
     rasterize_wrapper();
 }
 
+void ImageViewer::saveCamera() {
+    QString filename = QFileDialog::getSaveFileName(this,
+            tr("Save image"), "./",
+            tr("Text files (*.txt)"));
+    if (filename == "") { return; }
+    write_camera(filename.toStdString().c_str(), camera);
+}
+
 void ImageViewer::open_obj() {
     obj_file = QFileDialog::getOpenFileName(this,
             tr("Open .obj..."), "./", tr("Object files (*.obj)"));
@@ -285,6 +309,24 @@ void ImageViewer::open_obj() {
     QString tmp("Loaded .obj: ");
     tmp.append(obj_file.right(obj_file.size() - obj_file.lastIndexOf('/') - 1));
     objFileLabel->setText(tmp);
+}
+
+void ImageViewer::blockCameraOptionSignals(bool b) {
+    cam_left_box->blockSignals(b);
+    cam_right_box->blockSignals(b);
+    cam_bottom_box->blockSignals(b);
+    cam_top_box->blockSignals(b);
+    cam_near_box->blockSignals(b);
+    cam_far_box->blockSignals(b);
+    cam_eye_x_box->blockSignals(b);
+    cam_eye_y_box->blockSignals(b);
+    cam_eye_z_box->blockSignals(b);
+    cam_cen_x_box->blockSignals(b);
+    cam_cen_y_box->blockSignals(b);
+    cam_cen_z_box->blockSignals(b);
+    cam_up_x_box->blockSignals(b);
+    cam_up_y_box->blockSignals(b);
+    cam_up_z_box->blockSignals(b);
 }
 
 void ImageViewer::open_cam() {
@@ -296,21 +338,7 @@ void ImageViewer::open_cam() {
     }
     camera = tmp;
 
-    cam_left_box->blockSignals(true);
-    cam_right_box->blockSignals(true);
-    cam_bottom_box->blockSignals(true);
-    cam_top_box->blockSignals(true);
-    cam_near_box->blockSignals(true);
-    cam_far_box->blockSignals(true);
-    cam_eye_x_box->blockSignals(true);
-    cam_eye_y_box->blockSignals(true);
-    cam_eye_z_box->blockSignals(true);
-    cam_cen_x_box->blockSignals(true);
-    cam_cen_y_box->blockSignals(true);
-    cam_cen_z_box->blockSignals(true);
-    cam_up_x_box->blockSignals(true);
-    cam_up_y_box->blockSignals(true);
-    cam_up_z_box->blockSignals(true);
+    blockCameraOptionSignals(true);
 
     cam_left_box->setValue(camera->left);
     cam_right_box->setValue(camera->right);
@@ -328,21 +356,7 @@ void ImageViewer::open_cam() {
     cam_up_y_box->setValue(camera->up_y);
     cam_up_z_box->setValue(camera->up_z);
 
-    cam_left_box->blockSignals(false);
-    cam_right_box->blockSignals(false);
-    cam_bottom_box->blockSignals(false);
-    cam_top_box->blockSignals(false);
-    cam_near_box->blockSignals(false);
-    cam_far_box->blockSignals(false);
-    cam_eye_x_box->blockSignals(false);
-    cam_eye_y_box->blockSignals(false);
-    cam_eye_z_box->blockSignals(false);
-    cam_cen_x_box->blockSignals(false);
-    cam_cen_y_box->blockSignals(false);
-    cam_cen_z_box->blockSignals(false);
-    cam_up_x_box->blockSignals(false);
-    cam_up_y_box->blockSignals(false);
-    cam_up_z_box->blockSignals(false);
+    blockCameraOptionSignals(false);
 }
 
 void ImageViewer::open_img() {
@@ -364,6 +378,7 @@ void ImageViewer::save() {
 }
 
 void ImageViewer::rasterize_wrapper() {
+    if (obj_file == "") { return; }
     img = rasterize(obj_file.toStdString().c_str(), camera, 512, 512, shadingOption);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);

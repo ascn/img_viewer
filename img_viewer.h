@@ -63,6 +63,7 @@ public slots:
   void cameraOptionsChanged();
 
 private:
+  void blockCameraOptionSignals(bool b);
   QGroupBox *cameraDockContents;
   QDoubleSpinBox *cam_left_box;
   QDoubleSpinBox *cam_right_box;
@@ -94,6 +95,7 @@ private:
   QLabel *cam_up_x_label;
   QLabel *cam_up_y_label;
   QLabel *cam_up_z_label;
+  QPushButton *saveCameraParamButton;
 
   QLabel *imgLabel;
   QPixmap pixmap;
@@ -124,6 +126,7 @@ private slots:
   void open_img();
   void save();
   void rasterize_wrapper();
+  void saveCamera();
 };
 
 #endif /* IMG_VIEWER_H */

@@ -112,6 +112,17 @@ void update_matrices(camera_mat_t *cam) {
     cam->view = view_o * view_t;
 }
 
+void write_camera(const char *file, camera_mat_t *cam) {
+    std::ofstream camera_file(file);
+    camera_file << cam->left << " " << cam->right <<
+            " " << cam->bottom << " " << cam->top << "\n";
+    camera_file << cam->near << " " << cam->far << "\n\n";
+    camera_file << cam->eye_x << " " << cam->eye_y << " " << cam->eye_z << "\n";
+    camera_file << cam->c_x << " " << cam->c_y << " " << cam->c_z << "\n";
+    camera_file << cam->up_x << " " << cam->up_y << " " << cam->up_z << "\n";
+    camera_file.close();
+}
+
 QImage rasterize(const char *obj, camera_mat_t *camera, int w, int h, e_shader shading) {
 
     // Initialize output image
