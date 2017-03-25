@@ -82,6 +82,9 @@ ImageViewer::ImageViewer(QWidget *parent) :
     shadingOption = WHITE;
     connect(shadingOptionBox, SIGNAL(activated(int)),
                               this, SLOT(shadingOptionChanged(int)));
+
+    camera = new camera_mat_t;
+    camera_init(camera);
 }
 
 ImageViewer::~ImageViewer() {
@@ -185,11 +188,7 @@ void ImageViewer::blockCameraOptionSignals(bool b) {
 void ImageViewer::open_cam() {
     QString filename = QFileDialog::getOpenFileName(this,
             tr("Open camera file"), "./", tr("Text files (*.txt)"));
-    camera_mat_t *tmp = load_camera(filename.toStdString().c_str());
-    if (tmp == NULL) {
-        return;
-    }
-    camera = tmp;
+    load_camera(filename.toStdString().c_str(), camera);
 
     blockCameraOptionSignals(true);
 
@@ -251,34 +250,37 @@ void ImageViewer::redo() {
     }
 }
 
-void ImageViewer::rasterize_wrapper() {
-    if (obj_file == "") { return; }
+void ImageViewer::addOperationForUndo() {
     undoStack.push(img.copy());
     undoAct->setEnabled(true);
+    redoStack.clear();
+    redoStack->setEnabled(false);
+}
+
+void ImageViewer::rasterize_wrapper() {
+    if (obj_file == "") { return; }
+    addOperationForUndo();
     img = rasterize(obj_file.toStdString().c_str(), camera, 512, 512, shadingOption);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
 }
 
 void ImageViewer::grayscale_wrapper() {
-    undoStack.push(img.copy());
-    undoAct->setEnabled(true);
+    addOperationForUndo();
     grayscale(&img);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
 }
 
 void ImageViewer::flip_wrapper() {
-    undoStack.push(img.copy());
-    undoAct->setEnabled(true);
+    addOperationForUndo();
     flip(&img);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
 }
 
 void ImageViewer::flop_wrapper() {
-    undoStack.push(img.copy());
-    undoAct->setEnabled(true);
+    addOperationForUndo();
     flop(&img);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
@@ -503,9 +505,9 @@ void ImageViewer::createFilterDock() {
     connect(grayscaleButton, SIGNAL(clicked()),
                              this, SLOT(grayscale_wrapper()));
     connect(flipButton, SIGNAL(clicked()),
-                        this, SLOT(flip_wrapper));
+                        this, SLOT(flip_wrapper()));
     connect(flopButton, SIGNAL(clicked()),
-                        this, SLOT(flop_wrapper));
+                        this, SLOT(flop_wrapper()));
 
 }
 

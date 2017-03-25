@@ -135,6 +135,7 @@ private:
   camera_mat_t *camera;
   e_shader shadingOption;
 
+  void addOperationForUndo();
   QStack<QImage> undoStack;
   QStack<QImage> redoStack;
 

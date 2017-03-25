@@ -25,45 +25,44 @@ float dist2(vec4 p1, vec4 p2) {
     return std::sqrt(std::pow((p1[0] - p2[0]), 2) + std::pow((p1[1] - p2[1]), 2));
 }
 
-camera_mat_t *load_camera(const char *file) {
+void load_camera(const char *file, camera_mat_t *cam) {
     std::ifstream camera_file(file);
     if (!camera_file.is_open()) {
         QMessageBox errorBox;
         errorBox.setText("Camera file not valid");
         errorBox.setIcon(QMessageBox::Warning);
         errorBox.exec();
-        return NULL;
+        return;
     }
-    camera_mat_t *ret = new camera_mat_t;
-    camera_file >> ret->left;
-    camera_file >> ret->right;
-    camera_file >> ret->bottom;
-    camera_file >> ret->top;
-    camera_file >> ret->near;
-    camera_file >> ret->far;
+    camera_file >> cam->left;
+    camera_file >> cam->right;
+    camera_file >> cam->bottom;
+    camera_file >> cam->top;
+    camera_file >> cam->near;
+    camera_file >> cam->far;
 
-    ret->proj = mat4::proj(ret->left, ret->right, ret->top, ret->bottom, ret->near, ret->far);
+    cam->proj = mat4::proj(cam->left, cam->right, cam->top, cam->bottom, cam->near, cam->far);
     mat4 view_t;
-    camera_file >> ret->eye_x;
-    camera_file >> ret->eye_y;
-    camera_file >> ret->eye_z;
-    view_t[3][0] = -ret->eye_x;
-    view_t[3][1] = -ret->eye_y;
-    view_t[3][2] = -ret->eye_z;
+    camera_file >> cam->eye_x;
+    camera_file >> cam->eye_y;
+    camera_file >> cam->eye_z;
+    view_t[3][0] = -cam->eye_x;
+    view_t[3][1] = -cam->eye_y;
+    view_t[3][2] = -cam->eye_z;
 
     mat4 view_o;
-    camera_file >> ret->c_x;
-    camera_file >> ret->c_y;
-    camera_file >> ret->c_z;
-    float f_x = ret->c_x - ret->eye_x;
-    float f_y = ret->c_y - ret->eye_y;
-    float f_z = ret->c_z - ret->eye_z;
-    camera_file >> ret->up_x;
-    camera_file >> ret->up_y;
-    camera_file >> ret->up_z;
+    camera_file >> cam->c_x;
+    camera_file >> cam->c_y;
+    camera_file >> cam->c_z;
+    float f_x = cam->c_x - cam->eye_x;
+    float f_y = cam->c_y - cam->eye_y;
+    float f_z = cam->c_z - cam->eye_z;
+    camera_file >> cam->up_x;
+    camera_file >> cam->up_y;
+    camera_file >> cam->up_z;
     vec4 forward = vec4(f_x, f_y, f_z, 0);
     forward.norm();
-    vec4 up = vec4(ret->up_x, ret->up_y, ret->up_z, 0);
+    vec4 up = vec4(cam->up_x, cam->up_y, cam->up_z, 0);
     up.norm();
     vec4 x_axis = cross(forward, up);
 
@@ -77,9 +76,7 @@ camera_mat_t *load_camera(const char *file) {
     view_o[1][2] = forward[1];
     view_o[2][2] = forward[2];
 
-    ret->view = view_o * view_t;
-
-    return ret;
+    cam->view = view_o * view_t;
 }
 
 void update_matrices(camera_mat_t *cam) {
@@ -121,6 +118,25 @@ void write_camera(const char *file, camera_mat_t *cam) {
     camera_file << cam->c_x << " " << cam->c_y << " " << cam->c_z << "\n";
     camera_file << cam->up_x << " " << cam->up_y << " " << cam->up_z << "\n";
     camera_file.close();
+}
+
+void camera_init(camera_mat_t *cam) {
+    cam->left = 0;
+    cam->right = 0;
+    cam->bottom = 0;
+    cam->top = 0;
+    cam->near = 0;
+    cam->far = 10;
+    cam->eye_x = 0;
+    cam->eye_y = 0;
+    cam->eye_z = 0;
+    cam->c_x = 0;
+    cam->c_y = 0;
+    cam->c_z = 0;
+    cam->up_x = 0;
+    cam->up_y = 0;
+    cam->up_z = 0;
+    update_matrices(cam);
 }
 
 QImage rasterize(const char *obj, camera_mat_t *camera, int w, int h, e_shader shading) {
