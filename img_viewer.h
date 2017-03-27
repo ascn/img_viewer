@@ -135,12 +135,15 @@ private:
   QDockWidget *cameraDock;
 
   QString obj_file;
-  camera_mat_t *camera;
+  camera_mat_t camera;
   e_shader shadingOption;
 
+  void cameraChanged();
   void addOperationForUndo();
-  QStack<QImage> undoStack;
-  QStack<QImage> redoStack;
+  QStack<QImage> undoImageStack;
+  QStack<QImage> redoImageStack;
+  QStack<camera_mat_t> undoCameraStack;
+  QStack<camera_mat_t> redoCameraStack;
 
   void createActions();
   void createMenus();
@@ -170,6 +173,18 @@ private slots:
   void boxBlur_wrapper();
   void medianFilter_wrapper();
   void sobel_wrapper();
+  void activateRotateLeft();
+  void activateRotateRight();
+  void activateRotateUp();
+  void activateRotateDown();
+  void activateIncreaseFOV();
+  void activateDecreaseFOV();
+  void activateTranslateRight();
+  void activateTranslateLeft();
+  void activateTranslateUp();
+  void activateTranslateDown();
+  void activateZoomIn();
+  void activateZoomOut();
 };
 
 #endif /* IMG_VIEWER_H */

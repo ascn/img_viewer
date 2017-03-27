@@ -18,12 +18,17 @@
 #include <QSpinBox>
 #include <QProgressBar>
 #include <string>
-
+#include <cmath>
+#include <float.h>
 #include <iostream>
 #include "ImageViewControls.h"
 #include "img_viewer.h"
 #include "tiny_obj_loader.h"
 #include "im_op.h"
+#include "mat4.h"
+#include "vec4.h"
+
+const double PI = 3.1415926;
 
 ImageViewer::ImageViewer(QWidget *parent) :
     QMainWindow(parent) {
@@ -39,6 +44,30 @@ ImageViewer::ImageViewer(QWidget *parent) :
 
     layout->addWidget(imgLabel);
     imgLabel->show();
+    connect(imgLabel, SIGNAL(rotateLeft()),
+                      this, SLOT(activateRotateLeft()));
+    connect(imgLabel, SIGNAL(rotateRight()),
+                      this, SLOT(activateRotateRight()));
+    connect(imgLabel, SIGNAL(rotateUp()),
+                      this, SLOT(activateRotateUp()));
+    connect(imgLabel, SIGNAL(rotateDown()),
+                      this, SLOT(activateRotateDown()));
+    connect(imgLabel, SIGNAL(increaseFOV()),
+                      this, SLOT(activateIncreaseFOV()));
+    connect(imgLabel, SIGNAL(decreaseFOV()),
+                      this, SLOT(activateDecreaseFOV()));
+    connect(imgLabel, SIGNAL(translateRight()),
+                      this, SLOT(activateTranslateRight()));
+    connect(imgLabel, SIGNAL(translateLeft()),
+                      this, SLOT(activateTranslateLeft()));
+    connect(imgLabel, SIGNAL(translateUp()),
+                      this, SLOT(activateTranslateUp()));
+    connect(imgLabel, SIGNAL(translateDown()),
+                      this, SLOT(activateTranslateDown()));
+    connect(imgLabel, SIGNAL(zoomIn()),
+                      this, SLOT(activateZoomIn()));
+    connect(imgLabel, SIGNAL(zoomOut()),
+                      this, SLOT(activateZoomOut()));
 
     createCameraDock();
     createFilterDock();
@@ -82,12 +111,10 @@ ImageViewer::ImageViewer(QWidget *parent) :
     connect(shadingOptionBox, SIGNAL(activated(int)),
                               this, SLOT(shadingOptionChanged(int)));
 
-    camera = new camera_mat_t;
-    camera_init(camera);
+    camera_init(&camera);
 }
 
 ImageViewer::~ImageViewer() {
-    delete(camera);
 }
 
 void ImageViewer::shadingOptionChanged(int index) {
@@ -125,26 +152,27 @@ void ImageViewer::rasterizeButtonClicked() {
         errorBox.setIcon(QMessageBox::Warning);
         errorBox.exec();
     }
+    addOperationForUndo();
     rasterize_wrapper();
 }
 
 void ImageViewer::cameraOptionsChanged() {
-    camera->left = cam_left_box->value();
-    camera->right = cam_right_box->value();
-    camera->bottom = cam_bottom_box->value();
-    camera->top = cam_top_box->value();
-    camera->near = cam_near_box->value();
-    camera->far = cam_far_box->value();
-    camera->eye_x = cam_eye_x_box->value();
-    camera->eye_y = cam_eye_y_box->value();
-    camera->eye_z = cam_eye_z_box->value();
-    camera->c_x = cam_cen_x_box->value();
-    camera->c_y = cam_cen_y_box->value();
-    camera->c_z = cam_cen_z_box->value();
-    camera->up_x = cam_up_x_box->value();
-    camera->up_y = cam_up_y_box->value();
-    camera->up_z = cam_up_z_box->value();
-    update_matrices(camera);
+    camera.left = cam_left_box->value();
+    camera.right = cam_right_box->value();
+    camera.bottom = cam_bottom_box->value();
+    camera.top = cam_top_box->value();
+    camera.near = cam_near_box->value();
+    camera.far = cam_far_box->value();
+    camera.eye_x = cam_eye_x_box->value();
+    camera.eye_y = cam_eye_y_box->value();
+    camera.eye_z = cam_eye_z_box->value();
+    camera.c_x = cam_cen_x_box->value();
+    camera.c_y = cam_cen_y_box->value();
+    camera.c_z = cam_cen_z_box->value();
+    camera.up_x = cam_up_x_box->value();
+    camera.up_y = cam_up_y_box->value();
+    camera.up_z = cam_up_z_box->value();
+    update_matrices(&camera);
     rasterize_wrapper();
 }
 
@@ -153,7 +181,7 @@ void ImageViewer::saveCamera() {
             tr("Save image"), "./",
             tr("Text files (*.txt)"));
     if (filename == "") { return; }
-    write_camera(filename.toStdString().c_str(), camera);
+    write_camera(filename.toStdString().c_str(), &camera);
 }
 
 void ImageViewer::open_obj() {
@@ -187,26 +215,28 @@ void ImageViewer::blockCameraOptionSignals(bool b) {
 void ImageViewer::open_cam() {
     QString filename = QFileDialog::getOpenFileName(this,
             tr("Open camera file"), "./", tr("Text files (*.txt)"));
-    load_camera(filename.toStdString().c_str(), camera);
+    load_camera(filename.toStdString().c_str(), &camera);
 
+    cameraChanged();
+}
+
+void ImageViewer::cameraChanged() {
     blockCameraOptionSignals(true);
-
-    cam_left_box->setValue(camera->left);
-    cam_right_box->setValue(camera->right);
-    cam_bottom_box->setValue(camera->bottom);
-    cam_top_box->setValue(camera->top);
-    cam_near_box->setValue(camera->near);
-    cam_far_box->setValue(camera->far);
-    cam_eye_x_box->setValue(camera->eye_x);
-    cam_eye_y_box->setValue(camera->eye_y);
-    cam_eye_z_box->setValue(camera->eye_z);
-    cam_cen_x_box->setValue(camera->c_x);
-    cam_cen_y_box->setValue(camera->c_y);
-    cam_cen_z_box->setValue(camera->c_z);
-    cam_up_x_box->setValue(camera->up_x);
-    cam_up_y_box->setValue(camera->up_y);
-    cam_up_z_box->setValue(camera->up_z);
-
+    cam_left_box->setValue(camera.left);
+    cam_right_box->setValue(camera.right);
+    cam_bottom_box->setValue(camera.bottom);
+    cam_top_box->setValue(camera.top);
+    cam_near_box->setValue(camera.near);
+    cam_far_box->setValue(camera.far);
+    cam_eye_x_box->setValue(camera.eye_x);
+    cam_eye_y_box->setValue(camera.eye_y);
+    cam_eye_z_box->setValue(camera.eye_z);
+    cam_cen_x_box->setValue(camera.c_x);
+    cam_cen_y_box->setValue(camera.c_y);
+    cam_cen_z_box->setValue(camera.c_z);
+    cam_up_x_box->setValue(camera.up_x);
+    cam_up_y_box->setValue(camera.up_y);
+    cam_up_z_box->setValue(camera.up_z);
     blockCameraOptionSignals(false);
 }
 
@@ -228,38 +258,45 @@ void ImageViewer::save() {
 }
 
 void ImageViewer::undo() {
-    redoStack.push(img.copy());
+    redoImageStack.push(img.copy());
+    redoCameraStack.push(camera);
     redoAct->setEnabled(true);
-    img = undoStack.pop();
+    img = undoImageStack.pop();
+    camera = undoCameraStack.pop();
+    cameraChanged();
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
-    if (undoStack.isEmpty()) {
+    if (undoImageStack.isEmpty()) {
         undoAct->setEnabled(false);
     }
 }
 
 void ImageViewer::redo() {
-    undoStack.push(img.copy());
+    undoImageStack.push(img.copy());
+    undoCameraStack.push(camera);
     undoAct->setEnabled(true);
-    img = redoStack.pop();
+    img = redoImageStack.pop();
+    camera = redoCameraStack.pop();
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
-    if (redoStack.isEmpty()) {
+    cameraChanged();
+    if (redoImageStack.isEmpty()) {
         redoAct->setEnabled(false);
     }
 }
 
 void ImageViewer::addOperationForUndo() {
-    undoStack.push(img.copy());
+    undoImageStack.push(img.copy());
+    undoCameraStack.push(camera);
     undoAct->setEnabled(true);
-    redoStack.clear();
+    redoImageStack.clear();
+    redoCameraStack.clear();
     redoAct->setEnabled(false);
 }
 
 void ImageViewer::rasterize_wrapper() {
     if (obj_file == "") { return; }
-    addOperationForUndo();
-    img = rasterize(obj_file.toStdString().c_str(), camera, 512, 512, shadingOption);
+    img = rasterize(obj_file.toStdString().c_str(), &camera, 512, 512, shadingOption);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
 }
@@ -349,40 +386,49 @@ void ImageViewer::createCameraDock() {
     cam_far_box->setKeyboardTracking(false);
 
     cam_eye_x_box = new QDoubleSpinBox(cameraDockContents);
-    cam_eye_x_box->setRange(-100, 100);
+    cam_eye_x_box->setRange(-1000000000, 1000000000);
     cam_eye_x_box->setSingleStep(1);
+    cam_eye_x_box->setDecimals(4);
     cam_eye_x_box->setKeyboardTracking(false);
     cam_eye_y_box = new QDoubleSpinBox(cameraDockContents);
-    cam_eye_y_box->setRange(-100, 100);
+    cam_eye_y_box->setRange(-1000000000, 1000000000);
     cam_eye_y_box->setSingleStep(1);
+    cam_eye_y_box->setDecimals(4);
     cam_eye_y_box->setKeyboardTracking(false);
     cam_eye_z_box = new QDoubleSpinBox(cameraDockContents);
-    cam_eye_z_box->setRange(-100, 100);
+    cam_eye_z_box->setRange(-1000000000, 1000000000);
     cam_eye_z_box->setSingleStep(1);
+    cam_eye_z_box->setDecimals(4);
     cam_eye_z_box->setKeyboardTracking(false);
     cam_cen_x_box = new QDoubleSpinBox(cameraDockContents);
-    cam_cen_x_box->setRange(-100, 100);
+    cam_cen_x_box->setRange(-1000000000, 1000000000);
     cam_cen_x_box->setSingleStep(1);
+    cam_cen_x_box->setDecimals(4);
     cam_cen_x_box->setKeyboardTracking(false);
     cam_cen_y_box = new QDoubleSpinBox(cameraDockContents);
-    cam_cen_y_box->setRange(-100, 100);
+    cam_cen_y_box->setRange(-1000000000, 1000000000);
     cam_cen_y_box->setSingleStep(1);
+    cam_cen_y_box->setDecimals(4);
     cam_cen_y_box->setKeyboardTracking(false);
     cam_cen_z_box = new QDoubleSpinBox(cameraDockContents);
-    cam_cen_z_box->setRange(-100, 100);
+    cam_cen_z_box->setRange(-1000000000, 1000000000);
     cam_cen_z_box->setSingleStep(1);
+    cam_cen_z_box->setDecimals(4);
     cam_cen_z_box->setKeyboardTracking(false);
     cam_up_x_box = new QDoubleSpinBox(cameraDockContents);
-    cam_up_x_box->setRange(-100, 100);
+    cam_up_x_box->setRange(-1000000000, 1000000000);
     cam_up_x_box->setSingleStep(1);
+    cam_up_x_box->setDecimals(4);
     cam_up_x_box->setKeyboardTracking(false);
     cam_up_y_box = new QDoubleSpinBox(cameraDockContents);
-    cam_up_y_box->setRange(-100, 100);
+    cam_up_y_box->setRange(-1000000000, 1000000000);
     cam_up_y_box->setSingleStep(1);
+    cam_up_y_box->setDecimals(4);
     cam_up_y_box->setKeyboardTracking(false);
     cam_up_z_box = new QDoubleSpinBox(cameraDockContents);
-    cam_up_z_box->setRange(-100, 100);
+    cam_up_z_box->setRange(-1000000000, 1000000000);
     cam_up_z_box->setSingleStep(1);
+    cam_up_z_box->setDecimals(4);
     cam_up_z_box->setKeyboardTracking(false);
 
     cam_left_label = new QLabel(tr("Left: "), cameraDockContents);
@@ -565,6 +611,216 @@ void ImageViewer::createFilterDock() {
                                 this, SLOT(medianFilter_wrapper()));
     connect(sobelButton, SIGNAL(clicked()),
                          this, SLOT(sobel_wrapper()));
+}
+
+void ImageViewer::activateRotateLeft() {
+    addOperationForUndo();
+    vec4 cen = vec4(cam_cen_x_box->value(), cam_cen_y_box->value(), 
+            cam_cen_z_box->value(), 0);
+    vec4 eye = vec4(cam_eye_x_box->value(), cam_eye_y_box->value(),
+            cam_eye_z_box->value(), 0);
+    vec4 up = vec4(cam_up_x_box->value(), cam_up_y_box->value(),
+            cam_up_z_box->value(), 0);
+    vec4 lookAt = cen - eye;
+    mat4 rotation = mat4::rot(2, up[0], up[1], up[2]);
+    vec4 rotated = rotation * lookAt;
+    blockCameraOptionSignals(true);
+    cam_cen_x_box->setValue(rotated[0]);
+    cam_cen_y_box->setValue(rotated[1]);
+    cam_cen_z_box->setValue(rotated[2]);
+    blockCameraOptionSignals(false);
+    cameraOptionsChanged();
+}
+
+void ImageViewer::activateRotateRight() {
+    addOperationForUndo();
+    vec4 cen = vec4(cam_cen_x_box->value(), cam_cen_y_box->value(), 
+            cam_cen_z_box->value(), 0);
+    vec4 eye = vec4(cam_eye_x_box->value(), cam_eye_y_box->value(),
+            cam_eye_z_box->value(), 0);
+    vec4 up = vec4(cam_up_x_box->value(), cam_up_y_box->value(),
+            cam_up_z_box->value(), 0);
+    vec4 lookAt = cen - eye;
+    mat4 rotation = mat4::rot(-2, up[0], up[1], up[2]);
+    vec4 rotated = rotation * lookAt;
+    blockCameraOptionSignals(true);
+    cam_cen_x_box->setValue(rotated[0]);
+    cam_cen_y_box->setValue(rotated[1]);
+    cam_cen_z_box->setValue(rotated[2]);
+    blockCameraOptionSignals(false);
+    cameraOptionsChanged();
+}
+
+void ImageViewer::activateRotateUp() {
+    addOperationForUndo();
+    vec4 cen = vec4(cam_cen_x_box->value(), cam_cen_y_box->value(), 
+            cam_cen_z_box->value(), 0);
+    vec4 eye = vec4(cam_eye_x_box->value(), cam_eye_y_box->value(),
+            cam_eye_z_box->value(), 0);
+    vec4 up = vec4(cam_up_x_box->value(), cam_up_y_box->value(),
+            cam_up_z_box->value(), 0);
+    vec4 lookAt = cen - eye;
+    vec4 right = cross(lookAt, up);
+    mat4 rotation = mat4::rot(2, right[0], right[1], right[2]);
+    vec4 rotated = rotation * lookAt;
+    vec4 up_rot = rotation * up;
+    up_rot.norm();
+    blockCameraOptionSignals(true);
+    cam_up_x_box->setValue(up_rot[0]);
+    cam_up_y_box->setValue(up_rot[1]);
+    cam_up_z_box->setValue(up_rot[2]);
+    blockCameraOptionSignals(false);
+    cameraOptionsChanged();
+}
+
+void ImageViewer::activateRotateDown() {
+    addOperationForUndo();
+    vec4 cen = vec4(cam_cen_x_box->value(), cam_cen_y_box->value(), 
+            cam_cen_z_box->value(), 0);
+    vec4 eye = vec4(cam_eye_x_box->value(), cam_eye_y_box->value(),
+            cam_eye_z_box->value(), 0);
+    vec4 up = vec4(cam_up_x_box->value(), cam_up_y_box->value(),
+            cam_up_z_box->value(), 0);
+    vec4 lookAt = cen - eye;
+    vec4 right = cross(lookAt, up);
+    mat4 rotation = mat4::rot(-2, right[0], right[1], right[2]);
+    vec4 rotated = rotation * lookAt;
+    vec4 up_rot = rotation * up;
+    up_rot.norm();
+    blockCameraOptionSignals(true);
+    cam_up_x_box->setValue(up_rot[0]);
+    cam_up_y_box->setValue(up_rot[1]);
+    cam_up_z_box->setValue(up_rot[2]);
+    blockCameraOptionSignals(false);
+    cameraOptionsChanged();
+}
+
+void ImageViewer::activateIncreaseFOV() {
+
+}
+
+void ImageViewer::activateDecreaseFOV() {
+
+}
+
+void ImageViewer::activateTranslateRight() {
+    addOperationForUndo();
+    vec4 cen = vec4(cam_cen_x_box->value(), cam_cen_y_box->value(), 
+            cam_cen_z_box->value(), 0);
+    vec4 eye = vec4(cam_eye_x_box->value(), cam_eye_y_box->value(),
+            cam_eye_z_box->value(), 0);
+    vec4 up = vec4(cam_up_x_box->value(), cam_up_y_box->value(),
+            cam_up_z_box->value(), 0);
+    vec4 lookAt = cen - eye;
+    vec4 right = cross(lookAt, up);
+    right.norm();
+    right /= 10;
+    blockCameraOptionSignals(true);
+    cam_cen_x_box->setValue(cam_cen_x_box->value() + right[0]);
+    cam_cen_y_box->setValue(cam_cen_y_box->value() + right[1]);
+    cam_cen_z_box->setValue(cam_cen_z_box->value() + right[2]);
+    cam_eye_x_box->setValue(cam_eye_x_box->value() + right[0]);
+    cam_eye_y_box->setValue(cam_eye_y_box->value() + right[1]);
+    cam_eye_z_box->setValue(cam_eye_z_box->value() + right[2]);
+    blockCameraOptionSignals(false);
+    cameraOptionsChanged();
+}
+
+void ImageViewer::activateTranslateLeft() {
+    addOperationForUndo();
+    vec4 cen = vec4(cam_cen_x_box->value(), cam_cen_y_box->value(), 
+            cam_cen_z_box->value(), 0);
+    vec4 eye = vec4(cam_eye_x_box->value(), cam_eye_y_box->value(),
+            cam_eye_z_box->value(), 0);
+    vec4 up = vec4(cam_up_x_box->value(), cam_up_y_box->value(),
+            cam_up_z_box->value(), 0);
+    vec4 lookAt = cen - eye;
+    vec4 right = cross(lookAt, up);
+    right.norm();
+    right /= 10;
+    blockCameraOptionSignals(true);
+    cam_cen_x_box->setValue(cam_cen_x_box->value() - right[0]);
+    cam_cen_y_box->setValue(cam_cen_y_box->value() - right[1]);
+    cam_cen_z_box->setValue(cam_cen_z_box->value() - right[2]);
+    cam_eye_x_box->setValue(cam_eye_x_box->value() - right[0]);
+    cam_eye_y_box->setValue(cam_eye_y_box->value() - right[1]);
+    cam_eye_z_box->setValue(cam_eye_z_box->value() - right[2]);
+    blockCameraOptionSignals(false);
+    cameraOptionsChanged();
+}
+
+void ImageViewer::activateTranslateUp() {
+    addOperationForUndo();
+    vec4 up = vec4(cam_up_x_box->value(), cam_up_y_box->value(),
+            cam_up_z_box->value(), 0);
+    up.norm();
+    up /= 10;
+    blockCameraOptionSignals(true);
+    cam_cen_x_box->setValue(cam_cen_x_box->value() + up[0]);
+    cam_cen_y_box->setValue(cam_cen_y_box->value() + up[1]);
+    cam_cen_z_box->setValue(cam_cen_z_box->value() + up[2]);
+    cam_eye_x_box->setValue(cam_eye_x_box->value() + up[0]);
+    cam_eye_y_box->setValue(cam_eye_y_box->value() + up[1]);
+    cam_eye_z_box->setValue(cam_eye_z_box->value() + up[2]);
+    blockCameraOptionSignals(false);
+    cameraOptionsChanged();
+}
+
+void ImageViewer::activateTranslateDown() {
+    addOperationForUndo();
+    vec4 up = vec4(cam_up_x_box->value(), cam_up_y_box->value(),
+            cam_up_z_box->value(), 0);
+    up.norm();
+    up /= 10;
+    blockCameraOptionSignals(true);
+    cam_cen_x_box->setValue(cam_cen_x_box->value() - up[0]);
+    cam_cen_y_box->setValue(cam_cen_y_box->value() - up[1]);
+    cam_cen_z_box->setValue(cam_cen_z_box->value() - up[2]);
+    cam_eye_x_box->setValue(cam_eye_x_box->value() - up[0]);
+    cam_eye_y_box->setValue(cam_eye_y_box->value() - up[1]);
+    cam_eye_z_box->setValue(cam_eye_z_box->value() - up[2]);
+    blockCameraOptionSignals(false);
+    cameraOptionsChanged();
+}
+
+void ImageViewer::activateZoomIn() {
+    addOperationForUndo();
+    vec4 cen = vec4(cam_cen_x_box->value(), cam_cen_y_box->value(),
+            cam_cen_z_box->value(), 0);
+    vec4 eye = vec4(cam_eye_x_box->value(), cam_eye_y_box->value(),
+            cam_eye_z_box->value(), 0);
+    vec4 lookAt = cen - eye;
+    lookAt.norm();
+    lookAt /= 10;
+    blockCameraOptionSignals(true);
+    cam_cen_x_box->setValue(cam_cen_x_box->value() + lookAt[0]);
+    cam_cen_y_box->setValue(cam_cen_y_box->value() + lookAt[1]);
+    cam_cen_z_box->setValue(cam_cen_z_box->value() + lookAt[2]);
+    cam_eye_x_box->setValue(cam_eye_x_box->value() + lookAt[0]);
+    cam_eye_y_box->setValue(cam_eye_y_box->value() + lookAt[1]);
+    cam_eye_z_box->setValue(cam_eye_z_box->value() + lookAt[2]);
+    blockCameraOptionSignals(false);
+    cameraOptionsChanged();
+}
+
+void ImageViewer::activateZoomOut() {
+    addOperationForUndo();
+    vec4 cen = vec4(cam_cen_x_box->value(), cam_cen_y_box->value(),
+            cam_cen_z_box->value(), 0);
+    vec4 eye = vec4(cam_eye_x_box->value(), cam_eye_y_box->value(),
+            cam_eye_z_box->value(), 0);
+    vec4 lookAt = cen - eye;
+    lookAt.norm();
+    lookAt /= 10;
+    blockCameraOptionSignals(true);
+    cam_cen_x_box->setValue(cam_cen_x_box->value() - lookAt[0]);
+    cam_cen_y_box->setValue(cam_cen_y_box->value() - lookAt[1]);
+    cam_cen_z_box->setValue(cam_cen_z_box->value() - lookAt[2]);
+    cam_eye_x_box->setValue(cam_eye_x_box->value() - lookAt[0]);
+    cam_eye_y_box->setValue(cam_eye_y_box->value() - lookAt[1]);
+    cam_eye_z_box->setValue(cam_eye_z_box->value() - lookAt[2]);
+    blockCameraOptionSignals(false);
+    cameraOptionsChanged();
 }
 
 void ImageViewer::createActions() {

@@ -328,7 +328,7 @@ QImage rasterize(const char *obj, camera_mat_t *camera, int w, int h, e_shader s
                 double y2 = f.pixel_coord[1][1];
                 double y3 = f.pixel_coord[2][1];
                 for (int i = intersects[0]; i < intersects[1]; ++i) {
-                    if (i < 0 || i > w) { continue; }
+                    if (i < 0 || i > w - 1) { continue; }
                     // Get barycentric coordinate of pixel
                     double x = i;
                     double l0 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) /
