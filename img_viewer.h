@@ -172,6 +172,8 @@ private slots:
   void transpose_wrapper();
   void boxBlur_wrapper();
   void medianFilter_wrapper();
+  void gaussianBlur_wrapper();
+  void resize_wrapper();
   void sobel_wrapper();
   void activateRotateLeft();
   void activateRotateRight();

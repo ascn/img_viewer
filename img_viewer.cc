@@ -36,6 +36,7 @@ ImageViewer::ImageViewer(QWidget *parent) :
     this->setWindowTitle("Rasterizer and Image Viewer");
 
     imgLabel = new ImageViewControls(this);
+    imgLabel->setCursor(Qt::PointingHandCursor);
 
     QVBoxLayout *layout = new QVBoxLayout();
     // setLayout(layout); // doesn't work for main windows
@@ -303,28 +304,28 @@ void ImageViewer::rasterize_wrapper() {
 
 void ImageViewer::grayscale_wrapper() {
     addOperationForUndo();
-    grayscale(&img);
+    grayscale(&img, filterProgress);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
 }
 
 void ImageViewer::flip_wrapper() {
     addOperationForUndo();
-    flip(&img);
+    flip(&img, filterProgress);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
 }
 
 void ImageViewer::flop_wrapper() {
     addOperationForUndo();
-    flop(&img);
+    flop(&img, filterProgress);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
 }
 
 void ImageViewer::transpose_wrapper() {
     addOperationForUndo();
-    img = transpose(&img);
+    img = transpose(&img, filterProgress);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
 }
@@ -343,9 +344,24 @@ void ImageViewer::medianFilter_wrapper() {
     imgLabel->setPixmap(pixmap);
 }
 
+void ImageViewer::gaussianBlur_wrapper() {
+    addOperationForUndo();
+    img = gaussianBlur(&img, gaussianBlurRadiusBox->value(),
+                        gaussianBlurSigmaBox->value(), filterProgress);
+    pixmap = QPixmap::fromImage(img);
+    imgLabel->setPixmap(pixmap);
+}
+
+void ImageViewer::resize_wrapper() {
+    QMessageBox errorBox;
+    errorBox.setText("Not implemented");
+    errorBox.setIcon(QMessageBox::Warning);
+    errorBox.exec();
+}
+
 void ImageViewer::sobel_wrapper() {
     addOperationForUndo();
-    img = sobel(&img);
+    img = sobel(&img, filterProgress);
     pixmap = QPixmap::fromImage(img);
     imgLabel->setPixmap(pixmap);
 }
@@ -551,6 +567,7 @@ void ImageViewer::createFilterDock() {
     gaussianBlurRadiusBox = new QSpinBox(filterDockContents);
     gaussianBlurRadiusBox->setRange(1, 255);
     gaussianBlurSigmaBox = new QDoubleSpinBox(filterDockContents);
+    gaussianBlurSigmaBox->setValue(1);
     resizeWidthBox = new QSpinBox(filterDockContents);
     resizeHeightBox = new QSpinBox(filterDockContents);
 
@@ -611,6 +628,10 @@ void ImageViewer::createFilterDock() {
                                 this, SLOT(medianFilter_wrapper()));
     connect(sobelButton, SIGNAL(clicked()),
                          this, SLOT(sobel_wrapper()));
+    connect(gaussianBlurButton, SIGNAL(clicked()),
+                                this, SLOT(gaussianBlur_wrapper()));
+    connect(resizeButton, SIGNAL(clicked()),
+                          this, SLOT(resize_wrapper()));
 }
 
 void ImageViewer::activateRotateLeft() {
@@ -876,8 +897,6 @@ void ImageViewer::createMenus() {
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
-
-    // do your own argument parsing
 
     ImageViewer *imgViewer = new ImageViewer();
     imgViewer->show();
